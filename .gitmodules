@@ -1,0 +1,6 @@
+[submodule "deps/sorting_network_cpp"]
+	path = deps/sorting_network_cpp
+	url = https://github.com/quxflux/sorting_network_cpp.git
+[submodule "deps/metal"]
+	path = deps/metal
+	url = https://github.com/brunocodutra/metal.git

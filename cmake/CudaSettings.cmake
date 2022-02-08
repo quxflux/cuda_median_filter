@@ -1,0 +1,5 @@
+function(set_cuda_settings project_name)
+    target_include_directories(${project_name} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
+    target_link_libraries(${project_name} INTERFACE CUDA::cudart_static)
+    target_compile_options(${project_name} INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr -ftemplate-depth 512 --diag-suppress 177>)
+endfunction()
