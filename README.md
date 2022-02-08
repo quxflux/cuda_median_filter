@@ -4,8 +4,8 @@
 
 A median filter may be used to remove salt and pepper noise from an image:
 
-![](./doc/reporter-camera.png)
-![](./doc/reporter-camera_median.png) 
+![](./doc/reporter-camera-noise.png)
+![](./doc/reporter-camera-noise_filtered.png) 
 
 (image courtesy: https://www.publicdomainpictures.net/en/view-image.php?image=197897&picture=reporter-camera)
 
