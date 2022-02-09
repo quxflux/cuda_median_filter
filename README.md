@@ -10,9 +10,9 @@ A median filter may be used to remove salt and pepper noise from an image:
 (image courtesy: https://www.publicdomainpictures.net/en/view-image.php?image=197897&picture=reporter-camera)
 
 As opposed to other well-known image filters, the median filter is non-linear and thus not separable. The computationally expensive part of the filter operation is to find the median element in the local neighborhood of a pixel. In order to achieve high throughput, the median filter implementation in this repo performs the sorting using fully compile time generated [Sorting Networks](https://en.wikipedia.org/wiki/Sorting_network). 
-Sorting networks may perform more comparison and swap operations than "classical" sorting algorithms in terms of big-O notation, sorting networks will result in zero branch divergence however which makes them a perfect match for SIMT execution. 
+Sorting networks may perform more comparison and swap operations than "classical" sorting algorithms in terms of big-O notation, sorting networks will result in zero branch divergence however, which makes them a perfect match for SIMT execution. 
 
-In case the pixel format are 8-bit values, sorting will additionally be vectorized using CUDA SIMD intrinsics effectively letting each thread process four pixels each. 
+In case of a 8-bit grayscale pixel format, sorting will additionally be vectorized using CUDA SIMD intrinsics effectively letting each thread process four pixels each. 
 
 ## Usage
 
@@ -21,7 +21,7 @@ To be able to use the median filters, the folder `deps/SortingNetworkCpp/include
 Due to heavy constexpr and template usage, code making use of `cuda_median_filter` has to be compiled with `--expt-relaxed-constexpr` and depening on the used filter size also with `-ftemplate-depth 512` (where 512 probably may also replaced with smaller values).
 
 Usage of the filter is straightforward. The templated function `quxflux::median_2d_async` has to be specialized for a value type and a filter size, e.g. `quxflux::median_2d_async<std::uint8_t, 3>` for a 3 x 3 8bit median filter. `quxflux::median_2d_async` is overloaded to either accept a linear device buffer or a `cudaTextureObject_t`. A `cudaStream_t` may be optionally provided:
-```
+```cpp
 #include <cuda_median_filter/cuda_median_filter.h>
 
 // usage with raw device memory
@@ -74,7 +74,7 @@ void median_7x7_u8(const cudaTextureObject_t tex,
 
 ## Results
 
-Figures in these section show [violin plots](https://en.wikipedia.org/wiki/Violin_plot) of processing speeds (100 runs for each implementation, each run including memory from host to device and device to host). All benchmarks have been performed with following hardware configuration (running Ubuntu 20.04 LTS):
+Figures in these section show [violin plots](https://en.wikipedia.org/wiki/Violin_plot) of processing speeds (100 runs for each implementation, each run including memory transfers from host to device and device to host). All benchmarks have been performed with following hardware configuration (running Ubuntu 20.04 LTS):
 * AMD Ryzen 7 2700X
 * NVIDIA GeForce GTX 1080
 * 32 GiB RAM
