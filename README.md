@@ -54,7 +54,7 @@ void median_7x7_u8(const cudaTextureObject_t tex,
 ### general
 * CUDA 11.6 (older versions may work as well)
 * Nvidia GPU with compute capability 61 or higher (GPUs with a lower compute capability version may work as well) 
-* [SortingNetworkCpp](https://github.com/quxflux/SortingNetworkCpp) (contained as submodule)
+* [SortingNetworkCpp](https://github.com/quxflux/sorting_network_cpp) (contained as submodule)
 
 ### tests
 * [metal](https://github.com/brunocodutra/metal) (contained as submodule)
