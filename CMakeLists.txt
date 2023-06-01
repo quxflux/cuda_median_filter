@@ -35,13 +35,10 @@ include(cmake/CudaSettings.cmake)
 add_library(project_cuda_settings INTERFACE)
 set_cuda_settings(project_cuda_settings)
 
-include(cmake/Conan.cmake)
-run_conan()
+include(cmake/CPM.cmake)
 
 if (BUILD_TESTS)
-    find_package(GTest REQUIRED)
-    include(GoogleTest)
-    enable_testing()
+    CPMAddPackage("gh:google/googletest#release-1.12.0")
 endif()
 
 add_subdirectory(src)
