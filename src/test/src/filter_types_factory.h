@@ -21,7 +21,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include <metal/list.hpp>
+#include <metal.hpp>
 
 namespace quxflux
 {

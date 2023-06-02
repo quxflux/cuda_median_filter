@@ -20,7 +20,7 @@
 _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")
 #endif
 
-#include <metal/list.hpp>
+#include <metal.hpp>
 
 #if defined(__GNUC__) || defined(__clang__)
   _Pragma("GCC diagnostic pop")
