@@ -36,6 +36,6 @@ namespace quxflux
 
     virtual void filter(const std::any& source_image, std::any& target_image) = 0;
 
-    virtual ~abstract_filter_impl() {}
+    virtual ~abstract_filter_impl() = default;
   };
 }  // namespace quxflux

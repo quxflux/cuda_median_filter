@@ -62,7 +62,7 @@ namespace quxflux
 
       template<typename T, std::int32_t BlockSize, std::int32_t ApronWidth, std::int32_t ApronHeight,
                typename ImageSource>
-      __device__ void load_apron(const pitched_array_accessor<T, detail::mutable_access> dst,
+      constexpr void load_apron(const pitched_array_accessor<T, detail::mutable_access> dst,
                                  const ImageSource img_source, const point<std::int32_t>& apron_origin)
       {
         constexpr std::int32_t num_load_ops_y = int_div_ceil(ApronHeight, BlockSize);

@@ -18,12 +18,18 @@
 
 namespace quxflux
 {
-  static std::vector<std::tuple<filter_configuration, filter_impl_ptr>> filter_impls;
+  namespace
+  {
+    std::vector<std::tuple<filter_configuration, filter_impl_ptr>> filter_impls;
+  }
 
   void register_filter(const std::tuple<filter_configuration, filter_impl_ptr>& filter)
   {
     filter_impls.push_back(filter);
   }
 
-  std::vector<std::tuple<filter_configuration, filter_impl_ptr>> get_registered_filters() { return filter_impls; }
+  std::vector<std::tuple<filter_configuration, filter_impl_ptr>> get_registered_filters()
+  {
+    return filter_impls;
+  }
 }  // namespace quxflux
