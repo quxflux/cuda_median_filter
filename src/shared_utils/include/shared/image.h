@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuda_median_filter/detail/cuda_wrap.h>
+#include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/math.h>
 #include <cuda_median_filter/detail/primitives.h>
 

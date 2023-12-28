@@ -12,15 +12,16 @@ target_compile_features(cuda_median_filter_project_options INTERFACE cxx_std_20)
 
 add_library(cuda_median_filter INTERFACE
     include/cuda_median_filter/cuda_median_filter.h
-    include/cuda_median_filter/detail/cuda_median_filter_impl.h
-    include/cuda_median_filter/detail/cuda_wrap.h
+    include/cuda_median_filter/detail/cuda/median_filter_impl.h
+    include/cuda_median_filter/detail/cuda/wrap_cuda.h
     include/cuda_median_filter/detail/image_source_target.h
     include/cuda_median_filter/detail/math.h
     include/cuda_median_filter/detail/pitched_array_accessor.h
     include/cuda_median_filter/detail/pointer_arithmetic.h
     include/cuda_median_filter/detail/primitives.h
     include/cuda_median_filter/detail/static_for.h
-    )
+    include/cuda_median_filter/detail/cuda/texture_image_source.h
+)
 target_include_directories(cuda_median_filter INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(cuda_median_filter INTERFACE sorting_network_cpp)
 

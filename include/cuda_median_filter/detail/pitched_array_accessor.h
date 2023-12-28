@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuda_median_filter/detail/cuda_wrap.h>
 #include <cuda_median_filter/detail/pointer_arithmetic.h>
 #include <cuda_median_filter/detail/primitives.h>
 

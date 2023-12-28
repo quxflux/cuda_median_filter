@@ -18,8 +18,9 @@
 
 #include <cstdint>
 
-#include <cuda_median_filter/detail/cuda_wrap.h>
-#include <cuda_median_filter/detail/cuda_median_filter_impl.h>
+#include <cuda_median_filter/detail/cuda/median_filter_impl.h>
+#include <cuda_median_filter/detail/cuda/texture_image_source.h>
+#include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/image_source_target.h>
 #include <cuda_median_filter/detail/primitives.h>
 

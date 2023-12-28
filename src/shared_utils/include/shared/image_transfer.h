@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuda_median_filter/detail/cuda_wrap.h>
+#include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 
 #include <shared/gpu_image.h>
 #include <shared/image.h>
