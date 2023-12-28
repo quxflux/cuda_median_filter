@@ -23,10 +23,10 @@
 #include <util/naive_median_filter_impl.h>
 
 #include <shared/fill_image_random.h>
-#include <shared/gpu_image.h>
+#include <shared/cuda/gpu_image.h>
 #include <shared/image_transfer.h>
-#include <shared/stream_handle.h>
-#include <shared/texture_handle.h>
+#include <shared/cuda/stream_handle.h>
+#include <shared/cuda/texture_handle.h>
 #include <shared/type_names.h>
 
 #include <array>

@@ -18,7 +18,7 @@
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 
-#include <shared/gpu_image.h>
+#include <shared/cuda/gpu_image.h>
 #include <shared/image.h>
 
 namespace quxflux

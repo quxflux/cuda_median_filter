@@ -17,7 +17,7 @@
 #include <filter_database.h>
 #include <filter_spec_factory.h>
 
-#include <shared/cuda_util.h>
+#include <shared/cuda/util.h>
 #include <shared/image.h>
 #include <shared/fill_image_random.h>
 #include <shared/ppm.h>

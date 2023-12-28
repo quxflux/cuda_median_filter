@@ -17,66 +17,73 @@
 #pragma once
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
+#include <cuda_median_filter/detail/image_source_target.h>
 #include <cuda_median_filter/detail/math.h>
 #include <cuda_median_filter/detail/primitives.h>
 
+#include <cassert>
 #include <cstdint>
 #include <memory>
-#include <cassert>
 #include <type_traits>
 
 namespace quxflux
 {
   template<typename T>
-  class image
+  class image : public detail::bounded_image<T>
   {
+    using base = detail::bounded_image<T>;
     static_assert(std::is_arithmetic_v<T>, "Only arithmetic types are supported");
 
     static inline constexpr std::int32_t DefaultAlignment = 1024;
 
   public:
-    image() = default;
+    constexpr image() = default;
     image(const bounds<std::int32_t>& bounds, const std::int32_t row_pitch_in_bytes = 0)
     {
       resize(bounds, row_pitch_in_bytes);
     }
-    image(const std::shared_ptr<byte> preallocated_data, const bounds<std::int32_t>& bounds,
+    image(const std::shared_ptr<byte> pre_allocated_data, const bounds<std::int32_t>& bounds,
           const std::int32_t row_pitch_in_bytes)
-      : bounds_(bounds), row_pitch_in_bytes_(row_pitch_in_bytes), data_(preallocated_data)
+      : detail::bounded_image<T>(bounds), row_pitch_in_bytes_(row_pitch_in_bytes), data_(pre_allocated_data)
     {}
 
-    image(const image&) = default;
-    image(image&&) = default;
-    image& operator=(const image&) = default;
-    image& operator=(image&&) = default;
+    constexpr image(const image&) = default;
+    constexpr image(image&&) = default;
+    constexpr image& operator=(const image&) = default;
+    constexpr image& operator=(image&&) = default;
 
     void resize(const bounds<std::int32_t>& bounds, const std::int32_t row_pitch_in_bytes = 0)
     {
-      bounds_ = bounds;
-      row_pitch_in_bytes_ = row_pitch_in_bytes >= bounds_.width * std::int32_t{sizeof(T)}
+      base::bounds_ = bounds;
+      row_pitch_in_bytes_ = row_pitch_in_bytes >= base::bounds_.width * std::int32_t{sizeof(T)}
                               ? row_pitch_in_bytes
-                              : int_div_ceil(std::int32_t{sizeof(T)} * bounds_.width, DefaultAlignment) *
+                              : int_div_ceil(std::int32_t{sizeof(T)} * base::bounds_.width, DefaultAlignment) *
                                   DefaultAlignment;
       data_ = std::shared_ptr<byte>(
-        static_cast<byte*>(::operator new(static_cast<std::size_t>(bounds_.height * row_pitch_in_bytes_))));
+        static_cast<byte*>(::operator new(static_cast<std::size_t>(base::bounds_.height * row_pitch_in_bytes_))));
     }
 
-    explicit operator bool() const
+    explicit constexpr operator bool() const
     {
-      return bounds_.width > 0 && bounds_.height > 0 && row_pitch_in_bytes_ >= sizeof(T) * bounds_.width && data_;
+      return base::bounds_.width > 0 && base::bounds_.height > 0 &&
+             row_pitch_in_bytes_ >= sizeof(T) * base::bounds_.width && data_;
     }
 
-    auto bounds() const { return bounds_; }
-    std::int32_t row_pitch_in_bytes() const { return row_pitch_in_bytes_; }
+    [[nodiscard]] constexpr std::int32_t row_pitch_in_bytes() const { return row_pitch_in_bytes_; }
 
-    byte* data_ptr() { return data_.get(); }
-    const byte* data_ptr() const { return data_.get(); }
+    [[nodiscard]] constexpr byte* data_ptr() { return data_.get(); }
+    [[nodiscard]] constexpr const byte* data_ptr() const { return data_.get(); }
 
-    byte* row_data_ptr(const std::int32_t row) { return data_.get() + row_pitch_in_bytes_ * row; }
-    const byte* row_data_ptr(const std::int32_t row) const { return data_.get() + row_pitch_in_bytes_ * row; }
+    [[nodiscard]] constexpr byte* row_data_ptr(const std::int32_t row)
+    {
+      return data_.get() + row_pitch_in_bytes_ * row;
+    }
+    [[nodiscard]] constexpr const byte* row_data_ptr(const std::int32_t row) const
+    {
+      return data_.get() + row_pitch_in_bytes_ * row;
+    }
 
   private:
-    quxflux::bounds<std::int32_t> bounds_;
     std::int32_t row_pitch_in_bytes_ = 0;
 
     std::shared_ptr<byte> data_;

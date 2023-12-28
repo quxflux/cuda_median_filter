@@ -16,9 +16,9 @@
 
 #include <cuda_median_filter/cuda_median_filter.h>
 
-#include <shared/cuda_util.h>
-#include <shared/gpu_image.h>
-#include <shared/stream_handle.h>
+#include <shared/cuda/util.h>
+#include <shared/cuda/gpu_image.h>
+#include <shared/cuda/stream_handle.h>
 #include <shared/image_transfer.h>
 #include <shared/image_transfer.h>
 #include <shared/ppm.h>

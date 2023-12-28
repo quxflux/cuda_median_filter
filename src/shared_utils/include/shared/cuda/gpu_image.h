@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <shared/cuda_util.h>
+#include <shared/cuda/util.h>
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/primitives.h>
@@ -26,39 +26,39 @@
 namespace quxflux
 {
   template<typename T>
-  class gpu_image
+  class gpu_image : public detail::bounded_image<T>
   {
-  public:
-    gpu_image() = default;
+    using base = detail::bounded_image<T>;
 
-    gpu_image(const bounds<std::int32_t>& bounds) { resize(bounds); }
+  public:
+    constexpr gpu_image() = default;
+
+    explicit gpu_image(const bounds<std::int32_t>& bounds) : base(bounds) { resize(bounds); }
 
     void resize(const bounds<std::int32_t>& bounds)
     {
-      if (bounds.width > bounds_.width || bounds.height > bounds_.height)
+      if (bounds.width > base::bounds_.width || bounds.height > base::bounds_.height)
       {
         std::tie(data_, row_pitch_bytes_) = make_unique_device_pitched(
           static_cast<std::size_t>(bounds.width * std::int32_t{sizeof(T)}), static_cast<std::size_t>(bounds.height));
       }
 
-      bounds_ = bounds;
+      base::bounds_ = bounds;
     }
 
-    auto bounds() const noexcept { return bounds_; }
-    std::int32_t row_pitch_in_bytes() const { return row_pitch_bytes_; }
+    constexpr std::int32_t row_pitch_in_bytes() const { return row_pitch_bytes_; }
 
-    byte* data() { return data_.get(); }
-    const byte* data() const { return data_.get(); }
+    [[nodiscard]] constexpr byte* data() { return data_.get(); }
+    [[nodiscard]] constexpr const byte* data() const { return data_.get(); }
 
-    explicit operator bool() const
+    [[nodiscard]] constexpr explicit operator bool() const
     {
-      return data_ && bounds_.width > 0 && bounds_.height > 0 && row_pitch_bytes_ >= bounds_.width;
+      return data_ && base::bounds_.width > 0 && base::ounds_.height > 0 && row_pitch_bytes_ >= base::bounds_.width;
     }
 
   private:
     unique_pitched_device_ptr data_;
 
-    quxflux::bounds<std::int32_t> bounds_;
     std::int32_t row_pitch_bytes_ = 0;
   };
 }  // namespace quxflux

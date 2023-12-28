@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <shared/cuda_util.h>
+#include <shared/cuda/util.h>
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/primitives.h>

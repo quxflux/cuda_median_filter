@@ -32,10 +32,11 @@ namespace quxflux
     public:
       using value_type = T;
 
+      constexpr bounded_image() = default;
       explicit constexpr bounded_image(const bounds<std::int32_t>& bounds) : bounds_(bounds) {}
       constexpr auto bounds() const { return bounds_; }
 
-    private:
+    protected:
       ::quxflux::bounds<std::int32_t> bounds_;
     };
   }  // namespace detail

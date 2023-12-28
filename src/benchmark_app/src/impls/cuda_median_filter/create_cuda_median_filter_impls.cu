@@ -21,9 +21,9 @@
 #include <filter_database.h>
 #include <filter_spec_factory.h>
 
-#include <shared/gpu_image.h>
+#include <shared/cuda/gpu_image.h>
+#include <shared/cuda/stream_handle.h>
 #include <shared/image_transfer.h>
-#include <shared/stream_handle.h>
 
 namespace quxflux
 {
