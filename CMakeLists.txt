@@ -21,6 +21,7 @@ add_library(cuda_median_filter INTERFACE
     include/cuda_median_filter/detail/primitives.h
     include/cuda_median_filter/detail/static_for.h
     include/cuda_median_filter/detail/cuda/texture_image_source.h
+    include/cuda_median_filter/detail/load_apron.h
 )
 target_include_directories(cuda_median_filter INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(cuda_median_filter INTERFACE sorting_network_cpp)

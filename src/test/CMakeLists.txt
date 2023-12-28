@@ -2,7 +2,7 @@ project(cuda_median_filter_tests)
 
 include(GoogleTest)
 
-add_executable(${PROJECT_NAME} src/cuda_median_filter_tests.cu)
+add_executable(${PROJECT_NAME} src/cuda/cuda_median_filter_tests.cu)
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
@@ -14,6 +14,7 @@ target_link_libraries(${PROJECT_NAME}
         cuda_median_filter
         GTest::gtest
         GTest::gmock
+        GTest::gtest_main
         Metal)
          
 gtest_discover_tests(${PROJECT_NAME})

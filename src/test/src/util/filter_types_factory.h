@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuda_median_filter/cuda_median_filter.h>
-
 #include <tuple>
 #include <type_traits>
 
@@ -35,7 +33,7 @@ namespace quxflux
   namespace detail
   {
     template<typename DataTypes, typename FilterSizes>
-    auto generate_all_filter_specs_impl()
+    constexpr auto generate_all_filter_specs_impl()
       -> metal::transform<metal::partial<metal::lambda<metal::apply>, metal::lambda<filter_spec>>,
                           metal::cartesian<DataTypes, FilterSizes>>
     {
@@ -46,7 +44,7 @@ namespace quxflux
     struct rewrap_list_impl
     {
       template<typename... ListItems>
-      auto operator()(const metal::list<ListItems...>* const) -> VariadicT<ListItems...>*
+      constexpr auto operator()(const metal::list<ListItems...>) -> VariadicT<ListItems...>
       {
         return {};
       }
@@ -57,6 +55,5 @@ namespace quxflux
   using generate_all_filter_specs = decltype(detail::generate_all_filter_specs_impl<DataTypes, FilterSizes>());
 
   template<template<typename...> typename VariadicTemplate, typename List>
-  using rewrap_list =
-    std::remove_pointer_t<decltype(detail::rewrap_list_impl<VariadicTemplate>{}(static_cast<const List*>(nullptr)))>;
+  using rewrap_list = decltype(detail::rewrap_list_impl<VariadicTemplate>{}(List{}));
 }  // namespace quxflux

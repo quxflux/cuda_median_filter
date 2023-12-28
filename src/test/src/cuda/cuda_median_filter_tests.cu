@@ -16,9 +16,11 @@
 
 #include <gtest/gtest.h>
 
-#include <filter_types_factory.h>
-#include <image_matcher.h>
-#include <median_filter_impl.h>
+#include <cuda_median_filter/cuda_median_filter.h>
+
+#include <util/filter_types_factory.h>
+#include <util/image_matcher.h>
+#include <util/naive_median_filter_impl.h>
 
 #include <shared/fill_image_random.h>
 #include <shared/gpu_image.h>
@@ -28,8 +30,7 @@
 #include <shared/type_names.h>
 
 #include <array>
-#include <string_view>
-#include <tuple>
+#include <string>
 #include <type_traits>
 
 namespace quxflux
@@ -132,9 +133,3 @@ namespace quxflux
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::texture{});
   }
 }  // namespace quxflux
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
