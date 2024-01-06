@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <tuple>
@@ -30,27 +31,20 @@ namespace quxflux
 {
   namespace detail
   {
-    struct cuda_free
+    template<auto Func>
+    struct cuda_free_caller
     {
       template<typename T>
       constexpr void operator()(T* device_ptr) const
       {
-        [[maybe_unused]] const cudaError_t r = cudaFree(device_ptr);
+        [[maybe_unused]] const cudaError_t r = std::invoke(Func, device_ptr);
 
         assert(r == cudaSuccess && "cudaFree failed!");
       }
     };
 
-    struct cuda_free_host
-    {
-      template<typename T>
-      constexpr void operator()(T* ptr) const
-      {
-        [[maybe_unused]] const cudaError_t r = cudaFreeHost(ptr);
-
-        assert(r == cudaSuccess && "cudaFree failed!");
-      }
-    };
+    using cuda_free = cuda_free_caller<&cudaFree>;
+    using cuda_free_host = cuda_free_caller<&cudaFreeHost>;
   }  // namespace detail
 
   struct cuda_runtime_error : std::runtime_error
@@ -86,8 +80,6 @@ namespace quxflux
     return std::chrono::duration<float, std::milli>{milliseconds};
   }
 
-  using unique_pitched_device_ptr = std::unique_ptr<byte, detail::cuda_free>;
-
   inline auto make_unique_device_pitched(const std::size_t width_in_bytes, const std::size_t height)
   {
     void* ptr;
@@ -100,16 +92,14 @@ namespace quxflux
                            static_cast<std::int32_t>(pitch_in_bytes));
   }
 
-  using unique_pinned_host_ptr = std::unique_ptr<byte, detail::cuda_free_host>;
-
-  inline unique_pinned_host_ptr make_unique_host_pinned(const std::size_t num_bytes)
+  inline auto make_unique_host_pinned(const std::size_t num_bytes)
   {
     void* ptr = nullptr;
 
     using func_t = cudaError_t (*)(void**, size_t);
     cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
 
-    return unique_pinned_host_ptr(static_cast<byte*>(ptr));
+    return std::unique_ptr<byte[], detail::cuda_free_host>{static_cast<byte*>(ptr)};
   }
 
   template<typename T>
@@ -118,13 +108,7 @@ namespace quxflux
     const auto row_pitch_in_bytes = int_div_ceil(std::int32_t{sizeof(T)} * bounds.width, alignment) * alignment;
     const auto num_bytes = static_cast<size_t>(row_pitch_in_bytes * bounds.height);
 
-    void* ptr = nullptr;
-
-    using func_t = cudaError_t (*)(void**, size_t);
-    cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
-
-    return image<T>{std::shared_ptr<byte[]>{static_cast<byte*>(ptr), detail::cuda_free_host{}}, bounds,
-                    row_pitch_in_bytes};
+    return image<T>{std::shared_ptr{make_unique_host_pinned(num_bytes)}, bounds, row_pitch_in_bytes};
   }
 
   template<typename T>
