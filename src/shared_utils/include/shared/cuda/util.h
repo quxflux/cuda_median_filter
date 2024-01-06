@@ -96,7 +96,7 @@ namespace quxflux
     using func_t = cudaError_t (*)(void**, size_t*, size_t, size_t);
     cuda_call<func_t>(&cudaMallocPitch, &ptr, &pitch_in_bytes, width_in_bytes, height);
 
-    return std::make_tuple(std::unique_ptr<byte, detail::cuda_free>(static_cast<byte*>(ptr)),
+    return std::make_tuple(std::unique_ptr<byte[], detail::cuda_free>(static_cast<byte*>(ptr)),
                            static_cast<std::int32_t>(pitch_in_bytes));
   }
 

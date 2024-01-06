@@ -51,8 +51,8 @@ namespace quxflux
 
         if (gpu_img_source.bounds() != bounds)
         {
-          gpu_img_source = gpu_image<T>(bounds);
-          gpu_img_target = gpu_image<T>(bounds);
+          gpu_img_source = make_gpu_image<T>(bounds);
+          gpu_img_target = make_gpu_image<T>(bounds);
         }
 
         {
@@ -60,8 +60,8 @@ namespace quxflux
 
           transfer(source, gpu_img_source, stream);
 
-          median_2d_async<T, FilterSpec::filter_size>(gpu_img_source.data(), gpu_img_source.row_pitch_in_bytes(),
-                                                      gpu_img_target.data(), gpu_img_target.row_pitch_in_bytes(),
+          median_2d_async<T, FilterSpec::filter_size>(gpu_img_source.data_ptr(), gpu_img_source.row_pitch_in_bytes(),
+                                                      gpu_img_target.data_ptr(), gpu_img_target.row_pitch_in_bytes(),
                                                       bounds.width, bounds.height, stream);
 
           transfer(gpu_img_target, target, stream);

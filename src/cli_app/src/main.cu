@@ -65,8 +65,8 @@ int main(int argc, char** args)
 
   const auto num_megapixels = (bounds.width * bounds.height) / 1'000'000;
   {
-    gpu_image<T> input_img_gpu(bounds);
-    gpu_image<T> output_img_gpu(bounds);
+    gpu_image<T> input_img_gpu = make_gpu_image<T>(bounds);
+    gpu_image<T> output_img_gpu = make_gpu_image<T>(bounds);
 
     for (std::size_t i = 0; i < 10; ++i)
     {
@@ -76,7 +76,7 @@ int main(int argc, char** args)
       {
         stream_handle stream;
         transfer(input_img, input_img_gpu, stream);
-        median_2d_async<T, 7>(input_img_gpu.data(), input_img_gpu.row_pitch_in_bytes(), output_img_gpu.data(),
+        median_2d_async<T, 7>(input_img_gpu.data_ptr(), input_img_gpu.row_pitch_in_bytes(), output_img_gpu.data_ptr(),
                               output_img_gpu.row_pitch_in_bytes(), bounds.width, bounds.height, stream);
         transfer(output_img_gpu, output_img, stream);
       }

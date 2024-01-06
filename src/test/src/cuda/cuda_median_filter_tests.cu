@@ -75,8 +75,8 @@ namespace quxflux
       image<T> cpu_buf = make_host_image<T>(bounds);
       image<T> expected = make_host_image<T>(bounds);
 
-      gpu_image<T> gpu_img_src(bounds);
-      gpu_image<T> gpu_img_result(bounds);
+      gpu_image<T> gpu_img_src = make_gpu_image<T>(bounds);
+      gpu_image<T> gpu_img_result = make_gpu_image<T>(bounds);
 
       fill_image_random(cpu_buf);
       filter_image<FilterSpec::filter_size, T>(cpu_buf, expected);
@@ -87,15 +87,15 @@ namespace quxflux
 
         if constexpr (std::is_same_v<ImageSourceType, image_source_type::texture>)
         {
-          const texture_handle<T> tex(gpu_img_src.data(), gpu_img_src.bounds(), gpu_img_src.row_pitch_in_bytes());
+          const texture_handle<T> tex(gpu_img_src.data_ptr(), gpu_img_src.bounds(), gpu_img_src.row_pitch_in_bytes());
 
-          median_2d_async<T, FilterSpec::filter_size>(tex, gpu_img_result.data(), gpu_img_result.row_pitch_in_bytes(),
+          median_2d_async<T, FilterSpec::filter_size>(tex, gpu_img_result.data_ptr(), gpu_img_result.row_pitch_in_bytes(),
                                                       bounds.width, bounds.height, stream);
 
         } else if constexpr (std::is_same_v<ImageSourceType, image_source_type::pitched_array_2d>)
         {
-          median_2d_async<T, FilterSpec::filter_size>(gpu_img_src.data(), gpu_img_src.row_pitch_in_bytes(),
-                                                      gpu_img_result.data(), gpu_img_result.row_pitch_in_bytes(),
+          median_2d_async<T, FilterSpec::filter_size>(gpu_img_src.data_ptr(), gpu_img_src.row_pitch_in_bytes(),
+                                                      gpu_img_result.data_ptr(), gpu_img_result.row_pitch_in_bytes(),
                                                       bounds.width, bounds.height, stream);
         }
 
@@ -113,14 +113,12 @@ namespace quxflux
   {
     using T = typename TypeParam::value_type;
 
-    constexpr bounds<std::int32_t> empty_bounds{};
-
-    gpu_image<T> gpu_img_src(empty_bounds);
-    gpu_image<T> gpu_img_dst(empty_bounds);
+    gpu_image<T> gpu_img_src;
+    gpu_image<T> gpu_img_dst;
 
     EXPECT_NO_THROW((median_2d_async<T, TypeParam::filter_size>(
-      gpu_img_src.data(), gpu_img_src.row_pitch_in_bytes(), gpu_img_dst.data(), gpu_img_dst.row_pitch_in_bytes(),
-      gpu_img_src.bounds().width, gpu_img_src.bounds().height)));
+      gpu_img_src.data_ptr(), gpu_img_src.row_pitch_in_bytes(), gpu_img_dst.data_ptr(),
+      gpu_img_dst.row_pitch_in_bytes(), gpu_img_src.bounds().width, gpu_img_src.bounds().height)));
   }
 
   TYPED_TEST(filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source)

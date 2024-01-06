@@ -28,7 +28,7 @@
 
 namespace quxflux
 {
-  template<typename T>
+  template<typename T, typename Tag = struct DefaultTag>
   class image : public detail::bounded_image<T>
   {
     using base = detail::bounded_image<T>;

@@ -27,7 +27,7 @@ namespace quxflux
   void transfer(const gpu_image<PixelT>& img_src, image<PixelT>& img_dst, cudaStream_t stream = 0)
   {
     cuda_call(&cudaMemcpy2DAsync, img_dst.data_ptr(), static_cast<std::size_t>(img_dst.row_pitch_in_bytes()),
-              img_src.data(), static_cast<std::size_t>(img_src.row_pitch_in_bytes()),
+              img_src.data_ptr(), static_cast<std::size_t>(img_src.row_pitch_in_bytes()),
               static_cast<std::size_t>(img_src.bounds().width) * sizeof(PixelT),
               static_cast<std::size_t>(img_src.bounds().height), cudaMemcpyDefault, stream);
   }
@@ -35,7 +35,7 @@ namespace quxflux
   template<typename PixelT>
   void transfer(const image<PixelT>& img_src, gpu_image<PixelT>& img_dst, cudaStream_t stream = 0)
   {
-    cuda_call(&cudaMemcpy2DAsync, img_dst.data(), static_cast<std::size_t>(img_dst.row_pitch_in_bytes()),
+    cuda_call(&cudaMemcpy2DAsync, img_dst.data_ptr(), static_cast<std::size_t>(img_dst.row_pitch_in_bytes()),
               cast_to_cuda_ptr(img_src.data_ptr()), static_cast<std::size_t>(img_src.row_pitch_in_bytes()),
               static_cast<std::size_t>(img_src.bounds().width) * sizeof(PixelT),
               static_cast<std::size_t>(img_src.bounds().height), cudaMemcpyDefault, stream);

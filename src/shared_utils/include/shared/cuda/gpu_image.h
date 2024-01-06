@@ -17,6 +17,7 @@
 #pragma once
 
 #include <shared/cuda/util.h>
+#include <shared/image.h>
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/primitives.h>
@@ -26,39 +27,12 @@
 namespace quxflux
 {
   template<typename T>
-  class gpu_image : public detail::bounded_image<T>
+  using gpu_image = image<T, struct CudaImage>;
+
+  template<typename T>
+  gpu_image<T> make_gpu_image(const bounds<int32_t>& bounds)
   {
-    using base = detail::bounded_image<T>;
-
-  public:
-    constexpr gpu_image() = default;
-
-    explicit gpu_image(const bounds<std::int32_t>& bounds) : detail::bounded_image<T>() { resize(bounds); }
-
-    void resize(const bounds<std::int32_t>& bounds)
-    {
-      if (bounds.width > base::bounds_.width || bounds.height > base::bounds_.height)
-      {
-        std::tie(data_, row_pitch_bytes_) = make_unique_device_pitched(
-          static_cast<std::size_t>(bounds.width * std::int32_t{sizeof(T)}), static_cast<std::size_t>(bounds.height));
-      }
-
-      base::bounds_ = bounds;
-    }
-
-    constexpr std::int32_t row_pitch_in_bytes() const { return row_pitch_bytes_; }
-
-    [[nodiscard]] constexpr byte* data() { return data_.get(); }
-    [[nodiscard]] constexpr const byte* data() const { return data_.get(); }
-
-    [[nodiscard]] constexpr explicit operator bool() const
-    {
-      return data_ && base::bounds_.width > 0 && base::ounds_.height > 0 && row_pitch_bytes_ >= base::bounds_.width;
-    }
-
-  private:
-    unique_pitched_device_ptr data_;
-
-    std::int32_t row_pitch_bytes_ = 0;
-  };
+    auto [ptr, pitch] = make_unique_device_pitched(sizeof(T) * bounds.width, bounds.height);
+    return {std::shared_ptr{std::move(ptr)}, bounds, pitch};
+  }
 }  // namespace quxflux
