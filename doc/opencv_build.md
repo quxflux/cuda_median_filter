@@ -5,11 +5,11 @@ build instructions to build OpenCV with CUDA median filter (as used for the benc
 ```
 git clone https://github.com/opencv/opencv.git
 cd opencv
-git checkout 4.5.5
+git checkout 4.9.0
 cd ..
 git clone https://github.com/opencv/opencv_contrib.git
 cd opencv_contrib
-git checkout 4.5.5
+git checkout 4.9.0
 cd ..
 ```
 
@@ -24,6 +24,8 @@ cmake $openCvSource \
  -B"$openCvBuild/" \
  -G"$generator" \
  -DCMAKE_BUILD_TYPE=$buildType \
+ -DCMAKE_CXX_COMPILER=/usr/bin/g++-12 \
+ -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 \
  -DWITH_NVCUVID=OFF \
  -DWITH_CUDA=ON \
  -DCUDA_FAST_MATH=ON \
@@ -110,5 +112,5 @@ cmake $openCvSource \
 ```
 
 ```
-cmake --build $openCvBuild --target INSTALL --config $buildType
+cmake --build $openCvBuild --config $buildType
 ```
