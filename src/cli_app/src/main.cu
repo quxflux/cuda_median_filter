@@ -61,7 +61,7 @@ int main(int argc, char** args)
   }
 
   const auto bounds = input_img.bounds();
-  image<T> output_img(bounds);
+  image<T> output_img = make_host_image<T>(bounds);
 
   const auto num_megapixels = (bounds.width * bounds.height) / 1'000'000;
   {

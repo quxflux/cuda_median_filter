@@ -34,34 +34,18 @@ namespace quxflux
     using base = detail::bounded_image<T>;
     static_assert(std::is_arithmetic_v<T>, "Only arithmetic types are supported");
 
-    static inline constexpr std::int32_t DefaultAlignment = 1024;
-
   public:
     constexpr image() = default;
-    image(const bounds<std::int32_t>& bounds, const std::int32_t row_pitch_in_bytes = 0)
-    {
-      resize(bounds, row_pitch_in_bytes);
-    }
-    image(const std::shared_ptr<byte> pre_allocated_data, const bounds<std::int32_t>& bounds,
+
+    image(const std::shared_ptr<byte[]>& data, const bounds<std::int32_t>& bounds,
           const std::int32_t row_pitch_in_bytes)
-      : detail::bounded_image<T>(bounds), row_pitch_in_bytes_(row_pitch_in_bytes), data_(pre_allocated_data)
+      : detail::bounded_image<T>(bounds), row_pitch_in_bytes_(row_pitch_in_bytes), data_(std::move(data))
     {}
 
     constexpr image(const image&) = default;
     constexpr image(image&&) = default;
     constexpr image& operator=(const image&) = default;
     constexpr image& operator=(image&&) = default;
-
-    void resize(const bounds<std::int32_t>& bounds, const std::int32_t row_pitch_in_bytes = 0)
-    {
-      base::bounds_ = bounds;
-      row_pitch_in_bytes_ = row_pitch_in_bytes >= base::bounds_.width * std::int32_t{sizeof(T)}
-                              ? row_pitch_in_bytes
-                              : int_div_ceil(std::int32_t{sizeof(T)} * base::bounds_.width, DefaultAlignment) *
-                                  DefaultAlignment;
-      data_ = std::shared_ptr<byte>(
-        static_cast<byte*>(::operator new(static_cast<std::size_t>(base::bounds_.height * row_pitch_in_bytes_))));
-    }
 
     explicit constexpr operator bool() const
     {
@@ -86,6 +70,14 @@ namespace quxflux
   private:
     std::int32_t row_pitch_in_bytes_ = 0;
 
-    std::shared_ptr<byte> data_;
+    std::shared_ptr<byte[]> data_;
   };
+
+  template<typename T>
+  image<T> make_host_image(const bounds<int32_t>& bounds, const int32_t alignment = 1024)
+  {
+    const auto row_pitch_in_bytes = int_div_ceil(std::int32_t{sizeof(T)} * bounds.width, alignment) * alignment;
+    const auto num_bytes = static_cast<size_t>(row_pitch_in_bytes * bounds.height);
+    return image<T>{std::shared_ptr<byte[]>(new byte[num_bytes]), bounds, row_pitch_in_bytes};
+  }
 }  // namespace quxflux

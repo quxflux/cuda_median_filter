@@ -33,7 +33,7 @@ namespace quxflux
   public:
     constexpr gpu_image() = default;
 
-    explicit gpu_image(const bounds<std::int32_t>& bounds) : base(bounds) { resize(bounds); }
+    explicit gpu_image(const bounds<std::int32_t>& bounds) : detail::bounded_image<T>() { resize(bounds); }
 
     void resize(const bounds<std::int32_t>& bounds)
     {

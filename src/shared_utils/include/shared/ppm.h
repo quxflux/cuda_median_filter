@@ -65,7 +65,7 @@ namespace quxflux
 
     ifs.ignore(1);
 
-    image<std::uint8_t> image({width, height});
+    image<std::uint8_t> image = make_host_image<std::uint8_t>({height, width});
 
     for (int i = 0; i < height; ++i)
       ifs.read(reinterpret_cast<char*>(image.row_data_ptr(i)), width);

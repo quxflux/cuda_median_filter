@@ -72,8 +72,8 @@ namespace quxflux
 
       constexpr auto bounds = ::quxflux::bounds<std::int32_t>{128, 256};
 
-      image<T> cpu_buf(bounds);
-      image<T> expected(bounds);
+      image<T> cpu_buf = make_host_image<T>(bounds);
+      image<T> expected = make_host_image<T>(bounds);
 
       gpu_image<T> gpu_img_src(bounds);
       gpu_image<T> gpu_img_result(bounds);

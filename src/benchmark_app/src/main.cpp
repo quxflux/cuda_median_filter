@@ -96,18 +96,8 @@ int main(int argc, char** args)
 
         const bounds<std::int32_t> bounds{image_size, image_size};
 
-        image<value_type> src_image(bounds);
-        image<value_type> dst_image(bounds);
-
-        // allocate pinned memory for host side image storage
-        {
-          src_image = image<value_type>(
-            quxflux::make_unique_host_pinned(static_cast<std::size_t>(src_image.row_pitch_in_bytes() * bounds.height)),
-            src_image.bounds(), src_image.row_pitch_in_bytes());
-          dst_image = image<value_type>(
-            quxflux::make_unique_host_pinned(static_cast<std::size_t>(dst_image.row_pitch_in_bytes() * bounds.height)),
-            dst_image.bounds(), dst_image.row_pitch_in_bytes());
-        }
+        auto src_image = make_host_pinned_image<value_type>(bounds);
+        auto dst_image = make_host_pinned_image<value_type>(bounds);
 
         fill_image_random(src_image);
 

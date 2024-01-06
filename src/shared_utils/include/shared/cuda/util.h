@@ -24,6 +24,7 @@
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/primitives.h>
+#include <shared/image.h>
 
 namespace quxflux
 {
@@ -109,6 +110,21 @@ namespace quxflux
     cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
 
     return unique_pinned_host_ptr(static_cast<byte*>(ptr));
+  }
+
+  template<typename T>
+  image<T> make_host_pinned_image(const bounds<int32_t>& bounds, const int32_t alignment = 1024)
+  {
+    const auto row_pitch_in_bytes = int_div_ceil(std::int32_t{sizeof(T)} * bounds.width, alignment) * alignment;
+    const auto num_bytes = static_cast<size_t>(row_pitch_in_bytes * bounds.height);
+
+    void* ptr = nullptr;
+
+    using func_t = cudaError_t (*)(void**, size_t);
+    cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
+
+    return image<T>{std::shared_ptr<byte[]>{static_cast<byte*>(ptr), detail::cuda_free_host{}}, bounds,
+                    row_pitch_in_bytes};
   }
 
   template<typename T>
