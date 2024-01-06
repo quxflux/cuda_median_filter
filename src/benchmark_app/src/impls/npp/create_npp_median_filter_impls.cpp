@@ -20,9 +20,9 @@
 #include <filter_database.h>
 #include <filter_spec_factory.h>
 
-#include <shared/gpu_image.h>
+#include <shared/cuda/gpu_image.h>
+#include <shared/cuda/stream_handle.h>
 #include <shared/image_transfer.h>
-#include <shared/stream_handle.h>
 
 #include <npp.h>
 
@@ -61,8 +61,8 @@ namespace quxflux
 
         if (gpu_img_source.bounds() != bounds)
         {
-          gpu_img_source = gpu_image<T>(bounds);
-          gpu_img_target = gpu_image<T>(bounds);
+          gpu_img_source = make_gpu_image<T>(bounds);
+          gpu_img_target = make_gpu_image<T>(bounds);
         }
 
         stream_handle stream;
@@ -98,8 +98,8 @@ namespace quxflux
         const auto dst_pitch = gpu_img_target.row_pitch_in_bytes();
 
         npp_call(&nppiFilterMedian_8u_C1R_Ctx,
-                 gpu_img_source.data() + src_pitch * filter_radius + int{sizeof(T)} * filter_radius, src_pitch,
-                 gpu_img_target.data() + dst_pitch * filter_radius + int{sizeof(T)} * filter_radius, dst_pitch, roi,
+                 gpu_img_source.data_ptr() + src_pitch * filter_radius + int{sizeof(T)} * filter_radius, src_pitch,
+                 gpu_img_target.data_ptr() + dst_pitch * filter_radius + int{sizeof(T)} * filter_radius, dst_pitch, roi,
                  filter_size, anchor, scratch_buffer.get(), npp_stream_ctxt);
 
         transfer(gpu_img_target, target, stream);

@@ -32,7 +32,8 @@ namespace quxflux
   template<typename T>
   gpu_image<T> make_gpu_image(const bounds<int32_t>& bounds)
   {
-    auto [ptr, pitch] = make_unique_device_pitched(sizeof(T) * bounds.width, bounds.height);
+    auto [ptr, pitch] = make_unique_device_pitched(sizeof(T) * static_cast<size_t>(bounds.width),
+                                                   static_cast<size_t>(bounds.height));
     return {std::shared_ptr{std::move(ptr)}, bounds, pitch};
   }
 }  // namespace quxflux

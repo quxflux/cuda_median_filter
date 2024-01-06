@@ -92,14 +92,16 @@ namespace quxflux
                            static_cast<std::int32_t>(pitch_in_bytes));
   }
 
-  inline auto make_unique_host_pinned(const std::size_t num_bytes)
+  using unique_pinned_host_ptr = std::unique_ptr<byte[], detail::cuda_free_host>;
+
+  inline unique_pinned_host_ptr make_unique_host_pinned(const std::size_t num_bytes)
   {
     void* ptr = nullptr;
 
     using func_t = cudaError_t (*)(void**, size_t);
     cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
 
-    return std::unique_ptr<byte[], detail::cuda_free_host>{static_cast<byte*>(ptr)};
+    return unique_pinned_host_ptr{static_cast<byte*>(ptr)};
   }
 
   template<typename T>
