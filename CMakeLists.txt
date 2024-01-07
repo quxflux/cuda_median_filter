@@ -30,6 +30,7 @@ target_link_libraries(cuda_median_filter INTERFACE sorting_network_cpp)
 option(CUDA_MEDIAN_FILTER_BUILD_BENCHMARK_APP "Enable compilation of benchmarking app" OFF)
 option(CUDA_MEDIAN_FILTER_BUILD_CLI_APP "Enable compilation of command line app" OFF)
 option(CUDA_MEDIAN_FILTER_BUILD_TESTS "Enable Test Builds" OFF)
+option(CUDA_MEDIAN_FILTER_ENABLE_SYCL_CUDA "Enable support for CUDA via SYCL" OFF)
 
 include(cmake/CompilerWarnings.cmake)
 add_library(cuda_median_filter_project_warnings INTERFACE)
@@ -38,5 +39,7 @@ set_project_warnings(cuda_median_filter_project_warnings)
 include(cmake/CudaSettings.cmake)
 add_library(cuda_median_filter_project_cuda_settings INTERFACE)
 set_cuda_settings(cuda_median_filter_project_cuda_settings)
+
+include(cmake/SYCLTargets.cmake)
 
 add_subdirectory(src)
