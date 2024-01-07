@@ -1,7 +1,7 @@
 include(cmake/CPM.cmake)
 
 function(add_sorting_network_cpp)
-    CPMAddPackage("gh:quxflux/sorting_network_cpp#98bfe00")
+    CPMAddPackage("gh:quxflux/sorting_network_cpp#0a45cfa")
 endfunction()
 
 function(add_metal)
