@@ -1,5 +1,8 @@
 project(cuda_median_filter_tests)
 
+add_metal()
+add_gtest()
+
 include(GoogleTest)
 
 add_executable(${PROJECT_NAME} src/cuda/cuda_median_filter_tests.cu)

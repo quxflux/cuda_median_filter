@@ -4,8 +4,9 @@ project(cuda_median_filter LANGUAGES CUDA CXX)
 
 find_package(CUDAToolkit REQUIRED)
 
-include(cmake/CPM.cmake)
-CPMAddPackage("gh:quxflux/sorting_network_cpp#98bfe00")
+include(dependencies.cmake)
+
+add_sorting_network_cpp()
 
 add_library(cuda_median_filter_project_options INTERFACE)
 target_compile_features(cuda_median_filter_project_options INTERFACE cxx_std_20)
@@ -37,16 +38,5 @@ set_project_warnings(cuda_median_filter_project_warnings)
 include(cmake/CudaSettings.cmake)
 add_library(cuda_median_filter_project_cuda_settings INTERFACE)
 set_cuda_settings(cuda_median_filter_project_cuda_settings)
-
-if (CUDA_MEDIAN_FILTER_BUILD_TESTS OR CUDA_MEDIAN_FILTER_BUILD_BENCHMARK_APP)
-    set(METAL_BUILD_DOC OFF)
-    set(METAL_BUILD_EXAMPLES OFF)
-    set(METAL_BUILD_TESTS OFF)
-    CPMAddPackage("gh:brunocodutra/metal#v2.1.4")
-endif()
-
-if (CUDA_MEDIAN_FILTER_BUILD_TESTS)
-    CPMAddPackage("gh:google/googletest#release-1.12.0")
-endif()
 
 add_subdirectory(src)

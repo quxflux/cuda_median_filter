@@ -24,6 +24,8 @@ if (BENCHMARK_NPP)
     list(APPEND source_files src/impls/npp/create_npp_median_filter_impls.cpp)
 endif()
 
+add_metal()
+
 add_executable(${PROJECT_NAME} ${source_files})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
