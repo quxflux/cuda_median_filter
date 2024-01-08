@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/image_source_target.h>
 #include <cuda_median_filter/detail/math.h>
 #include <cuda_median_filter/detail/primitives.h>
@@ -24,6 +23,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <type_traits>
 
 namespace quxflux
@@ -54,6 +54,16 @@ namespace quxflux
     }
 
     [[nodiscard]] constexpr std::int32_t row_pitch_in_bytes() const { return row_pitch_in_bytes_; }
+
+    [[nodiscard]] constexpr std::span<byte> data()
+    {
+      return std::span{data_.get(), static_cast<size_t>(row_pitch_in_bytes_ * base::bounds_.height)};
+    }
+
+    [[nodiscard]] constexpr std::span<const byte> data() const
+    {
+      return std::span{data_.get(), static_cast<size_t>(row_pitch_in_bytes_ * base::bounds_.height)};
+    }
 
     [[nodiscard]] constexpr byte* data_ptr() { return data_.get(); }
     [[nodiscard]] constexpr const byte* data_ptr() const { return data_.get(); }

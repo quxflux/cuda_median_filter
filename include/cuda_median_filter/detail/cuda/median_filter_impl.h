@@ -77,7 +77,8 @@ namespace quxflux::detail
         const std::int32_t apron_origin_x = config::num_pixels_x * blockIdx.x - config::filter_radius;
 
         load_apron<T, config::block_size, config::apron_width, config::apron_height>(
-          shared_buf, img_source, point<std::int32_t>{apron_origin_x, apron_origin_y});
+          shared_buf, img_source, point<std::int32_t>{apron_origin_x, apron_origin_y},
+          point<std::uint32_t>{threadIdx.x, threadIdx.y});
       }
       __syncthreads();
 

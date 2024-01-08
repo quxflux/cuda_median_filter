@@ -40,5 +40,4 @@ namespace quxflux
               static_cast<std::size_t>(img_src.bounds().width) * sizeof(PixelT),
               static_cast<std::size_t>(img_src.bounds().height), cudaMemcpyDefault, stream);
   }
-
 }  // namespace quxflux

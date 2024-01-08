@@ -66,7 +66,8 @@ namespace quxflux
 
       if (num_mismatched)
       {
-        *os << num_mismatched << " pixels are deviating from expected image (" << std::setprecision(2)
+        *os << num_mismatched << " pixels are deviating from expected image (" << std::setprecision(2) << std::fixed
+            << std::setprecision(2)
             << static_cast<float>(num_mismatched) / static_cast<float>(bounds.width * bounds.height) * 100.f << " %)";
 
         return false;

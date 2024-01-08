@@ -23,7 +23,7 @@ target_link_libraries(cuda_median_filter_tests PRIVATE cuda_median_filter_projec
 if (CUDA_MEDIAN_FILTER_ENABLE_SYCL_CUDA)
     add_executable(cuda_median_filter_tests_sycl_cuda src/sycl/cuda_median_filter_tests.cpp)
     target_include_directories(cuda_median_filter_tests_sycl_cuda PRIVATE src)
-    target_link_libraries(cuda_median_filter_tests_sycl_cuda PRIVATE cuda_median_filter_tests_base sycl_cuda_target)
+    target_link_libraries(cuda_median_filter_tests_sycl_cuda PRIVATE cuda_median_filter_tests_base sycl_target)
 endif ()
 
 gtest_discover_tests(${PROJECT_NAME})

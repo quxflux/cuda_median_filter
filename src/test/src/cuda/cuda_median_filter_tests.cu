@@ -24,7 +24,7 @@
 
 #include <shared/fill_image_random.h>
 #include <shared/cuda/gpu_image.h>
-#include <shared/image_transfer.h>
+#include <shared/cuda/image_transfer.h>
 #include <shared/cuda/stream_handle.h>
 #include <shared/cuda/texture_handle.h>
 #include <shared/type_names.h>

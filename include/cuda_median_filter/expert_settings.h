@@ -1,5 +1,5 @@
 // This file is part of the cuda_median_filter (https://github.com/quxflux/cuda_median_filter).
-// Copyright (c) 2022 Lukas Riebel.
+// Copyright (c) 2024 Lukas Riebel.
 //
 // cuda_median_filter is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,12 +18,11 @@
 
 #include <cstdint>
 
-#ifdef __NVCC__
-#include <cuda_median_filter/detail/cuda/median_filter.h>
-#endif
-
-#ifdef SYCL_LANGUAGE_VERSION
-#include <cuda_median_filter/detail/sycl/median_filter.h>
-#endif
-
-
+namespace quxflux
+{
+  struct median_2d_expert_settings
+  {
+    static inline constexpr std::int32_t block_size = 16;
+    static inline constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
+  };
+}  // namespace quxflux
