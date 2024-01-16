@@ -17,15 +17,18 @@ cd ..
 openCvSource=opencv
 openCVExtraModules=opencv_contrib/modules
 openCvBuild=opencv/out/bin/opencv
+compiler=/usr/bin/g++-12
 generator=Ninja
 buildType=Release
+ptxVersion=8.9
+cudaGeneration="Lovelace"
 
 cmake $openCvSource \
  -B"$openCvBuild/" \
  -G"$generator" \
  -DCMAKE_BUILD_TYPE=$buildType \
- -DCMAKE_CXX_COMPILER=/usr/bin/g++-12 \
- -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 \
+ -DCMAKE_CXX_COMPILER=$compiler \
+ -DCMAKE_CUDA_HOST_COMPILER=$compiler \
  -DWITH_NVCUVID=OFF \
  -DWITH_CUDA=ON \
  -DCUDA_FAST_MATH=ON \
@@ -107,10 +110,10 @@ cmake $openCvSource \
  -DBUILD_opencv_ximgproc=OFF \
  -DBUILD_opencv_xobjdetect=OFF \
  -DBUILD_opencv_xphoto=OFF \
- -DCUDA_ARCH_PTX=6.0 \
- -DCUDA_GENERATION="Pascal"
+ -DCUDA_ARCH_PTX=$ptxVersion \
+ -DCUDA_GENERATION=$cudaGeneration
 ```
 
 ```
-cmake --build $openCvBuild --config $buildType
+cmake --build $openCvBuild --config $buildType -j 32
 ```
