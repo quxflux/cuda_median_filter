@@ -23,7 +23,7 @@
 
 #include <shared/cuda/gpu_image.h>
 #include <shared/cuda/stream_handle.h>
-#include <shared/image_transfer.h>
+#include <shared/cuda/image_transfer.h>
 
 namespace quxflux
 {

@@ -22,11 +22,41 @@
 #include <filter_database.h>
 
 #include <shared/image.h>
+#include <shared/cuda/util.h>
+
+#include <stdexcept>
 
 namespace quxflux
 {
   namespace
   {
+    std::pair<int, int> get_device_compute_capability()
+    {
+      int device_id = cv::cuda::getDevice();
+      if (device_id < 0)
+        throw std::runtime_error("cv::cuda::getDevice failed");
+
+      int major = 0, minor = 0;
+      cuda_call(&cudaDeviceGetAttribute, &major, cudaDevAttrComputeCapabilityMajor, device_id);
+      cuda_call(&cudaDeviceGetAttribute, &minor, cudaDevAttrComputeCapabilityMinor, device_id);
+
+      return {major, minor};
+    }
+
+    bool isDeviceCompatible()
+    {
+      const auto [major, minor] = get_device_compute_capability();
+
+      if (cv::cuda::TargetArchs::hasEqualOrLessPtx(major, minor))
+        return true;
+
+      for (int i = minor; i >= 0; i--)
+        if (cv::cuda::TargetArchs::hasBin(major, i))
+          return true;
+
+      return false;
+    }
+
     template<typename FilterSpec>
     struct filter_impl : abstract_filter_impl
     {
@@ -71,6 +101,9 @@ namespace quxflux
     };
 
     [[maybe_unused]] auto filter_registrar = [] {
+      if (!isDeviceCompatible())
+        throw std::runtime_error{"Device is unsupported for used OpenCV version"};
+
       for_each_filter_spec([&](auto filter_spec) {
         using filter_spec_t = decltype(filter_spec);
 
