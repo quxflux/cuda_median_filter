@@ -17,7 +17,9 @@
 #pragma once
 
 #include <cuda_median_filter/detail/image_source_target.h>
+#include <cuda_median_filter/detail/kernel_configuration.h>
 #include <cuda_median_filter/detail/load_apron.h>
+#include <cuda_median_filter/detail/pitched_array_accessor.h>
 
 #include <sorting_network_cpp/sorting_network.h>
 
@@ -37,12 +39,17 @@ namespace quxflux
            typename T = std::void_t<>, typename SourceAllocator = std::void_t<>,
            typename TargetAllocator = std::void_t<>>
   void median_2d_async(sycl::buffer<T, 2, SourceAllocator>& src, sycl::buffer<T, 2, TargetAllocator>& dst,
-                       sycl::queue& queue, const std::optional<std::int32_t> width = std::nullopt)
+                       sycl::queue& queue, const std::optional<std::int32_t> width_if_src_is_pitched = std::nullopt)
   {
-    const bounds<std::int32_t> img_bounds{
-      width.value_or(static_cast<int32_t>(src.get_range()[0])),
-      static_cast<int32_t>(src.get_range()[1]),
-    };
+    static_assert(FilterSize % 2 == 1, "Filter size must be odd");
+
+    using config = detail::median_2d_configuration<T, FilterSize, ExpertSettings::block_size, detail::no_vectorization>;
+
+
+    const auto src_pitch_bytes = static_cast<int32_t>(src.get_range()[1] * sizeof(T));
+    const auto actual_width = width_if_src_is_pitched.value_or(static_cast<int32_t>(src.get_range()[1]));
+
+    const bounds<std::int32_t> img_bounds{actual_width, static_cast<int32_t>(src.get_range()[0])};
 
     queue.submit([&](sycl::handler& handler) {
       sycl::accessor input{src, sycl::read_only};
@@ -51,43 +58,61 @@ namespace quxflux
       handler.require(input);
       handler.require(output);
 
-      handler.parallel_for(
-        sycl::range<2>{src.get_range()[0], static_cast<size_t>(width.value_or(src.get_range()[1]))},
-        [=](const sycl::id<2> idx) {
-          T filtered_value = {};
+      auto local_mem = sycl::local_accessor<byte, 1>(config::shared_buf_size, handler);
 
-          std::array<T, FilterSize * FilterSize> local_neighborhood_pixels;
-          auto it = local_neighborhood_pixels.begin();
+      const auto nd_range = sycl::nd_range<2>{
+        {static_cast<size_t>(img_bounds.height), static_cast<size_t>(img_bounds.width)},
+        {config::block_size, config::block_size},
+      };
 
-          static_for_2d<FilterSize, FilterSize>([&](const auto idx_local) {
-            const std::int32_t dy = idx_local.y - FilterSize / 2;
-            const std::int32_t dx = idx_local.x - FilterSize / 2;
+      handler.parallel_for(nd_range, [=](const sycl::nd_item<2> idx) {
+        T filtered_value = {};
 
-            const auto global_y = static_cast<int32_t>(idx.get(0)) + dy;
-            const auto global_x = static_cast<int32_t>(idx.get(1)) + dx;
+        const auto local_index_y = static_cast<int32_t>(idx.get_local_id(0));
+        const auto local_index_x = static_cast<int32_t>(idx.get_local_id(1));
 
-            if (global_x >= 0 && global_x < img_bounds.width && global_y >= 0 && global_y < img_bounds.height)
-            {
-              *(it++) = input[sycl::id<2>{static_cast<size_t>(global_y), static_cast<size_t>(global_x)}];
-            } else
-            {
-              *(it++) = T{};
-            }
-          });
+        const auto shared_accessor = pitched_array_accessor<T>{
+          local_mem.get_multi_ptr<sycl::access::decorated::no>().get(),
+          config::shared_buf_row_pitch,
+        };
 
-          constexpr sorting_net::sorting_network<FilterSize * FilterSize> sorting_net;
+        {
+          const auto block_idx_y = idx.get_group().get_group_id()[0];
+          const auto block_idx_x = idx.get_group().get_group_id()[1];
+          const std::int32_t apron_origin_y = config::num_pixels_y * block_idx_y - config::filter_radius;
+          const std::int32_t apron_origin_x = config::num_pixels_x * block_idx_x - config::filter_radius;
 
-          sorting_net(local_neighborhood_pixels.begin(), [](auto& a, auto& b) {
-            const auto a_cpy = a;
+          detail::load_apron<T, config::block_size, config::apron_width, config::apron_height>(
+            shared_accessor,
+            pitched_array_image_source<T>{input.template get_multi_ptr<sycl::access::decorated::no>().get(), img_bounds,
+                                          src_pitch_bytes},
+            point<std::int32_t>{apron_origin_x, apron_origin_y}, point<std::int32_t>{local_index_x, local_index_y});
+        }
 
-            a = std::min(a, b);
-            b = std::max(a_cpy, b);
-          });
+        group_barrier(idx.get_group());
 
-          filtered_value = *(local_neighborhood_pixels.begin() + (FilterSize * FilterSize) / 2);
+        std::array<T, config::filter_size * config::filter_size> local_neighborhood_pixels;
+        auto it = local_neighborhood_pixels.begin();
 
-          output[idx] = filtered_value;
+        static_for_2d<config::filter_size, config::filter_size>([&](const auto idx_local) {
+          *(it++) = shared_accessor.get({local_index_x + idx_local.x, local_index_y + idx_local.y});
         });
+
+        group_barrier(idx.get_group());
+
+        constexpr sorting_net::sorting_network<FilterSize * FilterSize> sorting_net;
+
+        sorting_net(local_neighborhood_pixels.begin(), [](auto& a, auto& b) {
+          const auto a_cpy = a;
+
+          a = std::min(a, b);
+          b = std::max(a_cpy, b);
+        });
+
+        filtered_value = *(local_neighborhood_pixels.begin() + (FilterSize * FilterSize) / 2);
+
+        output[idx.get_global_id()] = filtered_value;
+      });
     });
   }
 }  // namespace quxflux
