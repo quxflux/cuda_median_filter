@@ -16,17 +16,22 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include <cuda_median_filter/detail/cuda/median_filter_impl.h>
 #include <cuda_median_filter/detail/cuda/texture_image_source.h>
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
 #include <cuda_median_filter/detail/image_source_target.h>
 #include <cuda_median_filter/detail/primitives.h>
-#include <cuda_median_filter/expert_settings.h>
+
+#include <cstdint>
 
 namespace quxflux
 {
+  struct median_2d_expert_settings
+  {
+    static inline constexpr std::int32_t block_size = 16;
+    static inline constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
+  };
+
   template<typename T, std::int32_t FilterSize, typename ExpertSettings = median_2d_expert_settings>
   void median_2d_async(const cudaTextureObject_t src_texture, void* const dst, const std::int32_t dst_pitch_in_bytes,
                        const std::int32_t width, const std::int32_t height, const cudaStream_t stream = 0)

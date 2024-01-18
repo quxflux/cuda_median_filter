@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda_median_filter/detail/cuda/wrap_cuda.h>
+#include <cuda_median_filter/detail/kernel_configuration.h>
 #include <cuda_median_filter/detail/load_apron.h>
 #include <cuda_median_filter/detail/math.h>
 #include <cuda_median_filter/detail/pitched_array_accessor.h>
@@ -31,39 +32,19 @@
 
 namespace quxflux::detail
 {
+  template<typename T>
+  struct vectorization_for_byte_sized_values
+  {
+    static inline constexpr std::int32_t items_per_thread = (sizeof(T) == 1 ? 4 : 1);
+  };
+
   namespace kernels
   {
-    template<typename T, std::int32_t FilterSize, std::int32_t BlockSize, bool AllowVectorization>
-    struct median_2d_configuration
-    {
-      using value_type = T;
-
-      static inline constexpr bool vectorize = sizeof(T) == 1 && AllowVectorization;
-
-      static inline constexpr std::int32_t items_per_thread = vectorize ? 4 : 1;
-
-      static inline constexpr std::int32_t block_size = BlockSize;
-
-      static inline constexpr std::int32_t filter_size = FilterSize;
-      static inline constexpr std::int32_t filter_radius = FilterSize / 2;
-
-      static inline constexpr std::int32_t apron_width = items_per_thread * BlockSize + 2 * filter_radius;
-      static inline constexpr std::int32_t apron_height = BlockSize + 2 * filter_radius;
-
-      static inline constexpr std::int32_t num_pixels_x = items_per_thread * BlockSize;
-      static inline constexpr std::int32_t num_pixels_y = BlockSize;
-
-      static inline constexpr std::int32_t shared_buf_row_pitch =
-        vectorize ? (int_div_ceil(apron_width * std::int32_t{sizeof(T)}, 4) * 4)
-                  : (apron_width * std::int32_t{sizeof(T)});
-      static inline constexpr std::int32_t shared_buf_size = shared_buf_row_pitch * apron_height;
-    };
-
-    template<typename FilterConfig, typename ImageSource, typename ImageTarget>
+    template<typename KernelConfig, typename ImageSource, typename ImageTarget>
     __global__ void median_2d(const ImageSource img_source, const ImageTarget dst)
     {
       using T = typename ImageSource::value_type;
-      using config = FilterConfig;
+      using config = KernelConfig;
 
       const std::int32_t tidx_y = static_cast<std::int32_t>(threadIdx.y);
       const std::int32_t tidx_x = static_cast<std::int32_t>(threadIdx.x);
@@ -175,9 +156,12 @@ namespace quxflux::detail
 
     constexpr std::int32_t N = ExpertSettings::block_size;
 
+    static constexpr auto vectorization_allowed = FilterSize <= ExpertSettings::max_filter_size_allowed_for_vectorization;
+
     using filter_config =
-      kernels::median_2d_configuration<T, FilterSize, N,
-                                       FilterSize <= ExpertSettings::max_filter_size_allowed_for_vectorization>;
+      std::conditional_t<vectorization_allowed,
+                         median_2d_configuration<T, FilterSize, N, vectorization_for_byte_sized_values>,
+                         median_2d_configuration<T, FilterSize, N, no_vectorization>>;
 
     const dim3 block_size(N, N);
     const dim3 grid_size(int_div_ceil(img_dst.bounds().width, filter_config::num_pixels_x),

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuda_median_filter/expert_settings.h>
 #include <cuda_median_filter/detail/image_source_target.h>
 #include <cuda_median_filter/detail/load_apron.h>
 
@@ -29,7 +28,14 @@
 
 namespace quxflux
 {
-  template<std::int32_t FilterSize, typename T, typename SourceAllocator, typename TargetAllocator>
+  struct sycl_median_2d_expert_settings
+  {
+    static inline constexpr std::int32_t block_size = 16;
+  };
+
+  template<std::int32_t FilterSize, typename ExpertSettings = sycl_median_2d_expert_settings,
+           typename T = std::void_t<>, typename SourceAllocator = std::void_t<>,
+           typename TargetAllocator = std::void_t<>>
   void median_2d_async(sycl::buffer<T, 2, SourceAllocator>& src, sycl::buffer<T, 2, TargetAllocator>& dst,
                        sycl::queue& queue, const std::optional<std::int32_t> width = std::nullopt)
   {
