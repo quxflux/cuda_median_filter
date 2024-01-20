@@ -47,6 +47,12 @@ namespace quxflux
 
     constexpr bool operator==(const point& rhs) const noexcept { return rhs.x == x && rhs.y == y; }
     constexpr bool operator!=(const point& rhs) const noexcept { return !(*this == rhs); }
+
+    template<typename Q>
+    constexpr static point from_any(const Q x, const Q y)
+    {
+      return {static_cast<T>(x), static_cast<T>(y)};
+    }
   };
 
   template<typename T>

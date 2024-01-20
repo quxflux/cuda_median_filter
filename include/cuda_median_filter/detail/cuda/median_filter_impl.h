@@ -43,11 +43,14 @@ namespace quxflux::detail
     template<typename KernelConfig, typename ImageSource, typename ImageTarget>
     __global__ void median_2d(const ImageSource img_source, const ImageTarget dst)
     {
+      using idx_2d = point<int32_t>;
       using T = typename ImageSource::value_type;
       using config = KernelConfig;
 
-      const point local_idx{static_cast<std::int32_t>(threadIdx.x), static_cast<std::int32_t>(threadIdx.y)};
-      const point block_idx{static_cast<std::int32_t>(blockIdx.x), static_cast<std::int32_t>(blockIdx.y)};
+      static constexpr auto n_filter_elements = config::filter_size * config::filter_size;
+
+      const idx_2d local_idx = idx_2d::from_any(threadIdx.x, threadIdx.y);
+      const idx_2d block_idx = idx_2d::from_any(blockIdx.x, blockIdx.y);
 
       extern __shared__ byte shared_buf_data[];
       const pitched_array_accessor<T> shared_buf(shared_buf_data, config::shared_buf_row_pitch);
@@ -61,15 +64,15 @@ namespace quxflux::detail
 
       // gather all neighbor pixels and calculate the median value
       {
-        std::array<sorting_t, config::filter_size * config::filter_size> local_neighborhood_pixels;
+        std::array<sorting_t, n_filter_elements> local_neighborhood_pixels;
         auto it = local_neighborhood_pixels.begin();
 
         static_for_2d<config::filter_size, config::filter_size>([&](const auto idx) {
           const std::int32_t dy = idx.y - config::filter_radius;
           const std::int32_t dx = idx.x - config::filter_radius;
 
-          const point apron_idx = {local_idx.x * config::items_per_thread + config::filter_radius + dx,
-                                   local_idx.y + config::filter_radius + dy};
+          const idx_2d apron_idx = {local_idx.x * config::items_per_thread + config::filter_radius + dx,
+                                    local_idx.y + config::filter_radius + dy};
 
           if constexpr (config::vectorize)
           {
@@ -97,7 +100,7 @@ namespace quxflux::detail
           }
         });
 
-        constexpr sorting_net::sorting_network<config::filter_size * config::filter_size> sorting_net;
+        constexpr sorting_net::sorting_network<n_filter_elements> sorting_net;
 
         if constexpr (config::vectorize)
         {
@@ -117,12 +120,12 @@ namespace quxflux::detail
           });
         }
 
-        filtered_value = *(local_neighborhood_pixels.begin() + (config::filter_size * config::filter_size) / 2);
+        filtered_value = *std::midpoint(local_neighborhood_pixels.begin(),
+                                        local_neighborhood_pixels.begin() + n_filter_elements);
       }
 
-      const point<std::int32_t> global_idx = {local_idx.x * config::items_per_thread +
-                                                config::num_pixels_x * block_idx.x,
-                                              local_idx.y + config::num_pixels_y * block_idx.y};
+      const idx_2d global_idx = {local_idx.x * config::items_per_thread + config::num_pixels_x * block_idx.x,
+                                 local_idx.y + config::num_pixels_y * block_idx.y};
 
       if (inside_bounds(global_idx, img_source.bounds()))
       {

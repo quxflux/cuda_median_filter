@@ -35,6 +35,19 @@ namespace quxflux
     static inline constexpr std::int32_t block_size = 16;
   };
 
+  namespace detail
+  {
+    constexpr point<std::int32_t> to_idx2d(const auto& sycl_id)
+    {
+      return point<std::int32_t>::from_any(sycl_id[1], sycl_id[0]);
+    }
+
+    constexpr auto get_ptr(auto& accessor_like)
+    {
+      return accessor_like.template get_multi_ptr<sycl::access::decorated::no>().get();
+    }
+  }  // namespace detail
+
   template<std::int32_t FilterSize, typename ExpertSettings = sycl_median_2d_expert_settings,
            typename T = std::void_t<>, typename SourceAllocator = std::void_t<>,
            typename TargetAllocator = std::void_t<>>
@@ -43,8 +56,11 @@ namespace quxflux
   {
     static_assert(FilterSize % 2 == 1, "Filter size must be odd");
 
-    using config = detail::median_2d_configuration<T, FilterSize, ExpertSettings::block_size, detail::no_vectorization>;
+    using namespace detail;
 
+    using config = median_2d_configuration<T, FilterSize, ExpertSettings::block_size, no_vectorization>;
+
+    static constexpr auto n_filter_elements = config::filter_size * config::filter_size;
 
     const auto src_pitch_bytes = static_cast<int32_t>(src.get_range()[1] * sizeof(T));
     const auto actual_width = width_if_src_is_pitched.value_or(static_cast<int32_t>(src.get_range()[1]));
@@ -68,34 +84,25 @@ namespace quxflux
       handler.parallel_for(nd_range, [=](const sycl::nd_item<2> idx) {
         T filtered_value = {};
 
-        const auto local_index_y = static_cast<int32_t>(idx.get_local_id(0));
-        const auto local_index_x = static_cast<int32_t>(idx.get_local_id(1));
+        const auto local_idx = to_idx2d(idx.get_local_id());
 
-        const auto shared_accessor = pitched_array_accessor<T>{
-          local_mem.get_multi_ptr<sycl::access::decorated::no>().get(),
-          config::shared_buf_row_pitch,
-        };
-
-        detail::load_apron<T, config>(
-          shared_accessor,
-          pitched_array_image_source<T>{input.template get_multi_ptr<sycl::access::decorated::no>().get(), img_bounds,
-                                        src_pitch_bytes},
-          point<std::int32_t>{static_cast<std::int32_t>(idx.get_group().get_group_id()[1]),
-                              static_cast<std::int32_t>(idx.get_group().get_group_id()[0])},
-          point<std::int32_t>{local_index_x, local_index_y});
+        const auto shared_accessor = pitched_array_accessor<T>{get_ptr(local_mem), config::shared_buf_row_pitch};
+        load_apron<T, config>(shared_accessor,
+                              pitched_array_image_source<T>{get_ptr(input), img_bounds, src_pitch_bytes},
+                              to_idx2d(idx.get_group().get_group_id()), local_idx);
 
         group_barrier(idx.get_group());
 
-        std::array<T, config::filter_size * config::filter_size> local_neighborhood_pixels;
+        std::array<T, n_filter_elements> local_neighborhood_pixels;
         auto it = local_neighborhood_pixels.begin();
 
-        static_for_2d<config::filter_size, config::filter_size>([&](const auto idx_local) {
-          *(it++) = shared_accessor.get({local_index_x + idx_local.x, local_index_y + idx_local.y});
+        static_for_2d<config::filter_size, config::filter_size>([&](const auto offset) {
+          *(it++) = shared_accessor.get({local_idx.x + offset.x, local_idx.y + offset.y});
         });
 
         group_barrier(idx.get_group());
 
-        constexpr sorting_net::sorting_network<FilterSize * FilterSize> sorting_net;
+        constexpr sorting_net::sorting_network<n_filter_elements> sorting_net;
 
         sorting_net(local_neighborhood_pixels.begin(), [](auto& a, auto& b) {
           const auto a_cpy = a;
@@ -104,7 +111,8 @@ namespace quxflux
           b = std::max(a_cpy, b);
         });
 
-        filtered_value = *(local_neighborhood_pixels.begin() + (FilterSize * FilterSize) / 2);
+        filtered_value = *std::midpoint(local_neighborhood_pixels.begin(),
+                                        local_neighborhood_pixels.begin() + n_filter_elements);
 
         output[idx.get_global_id()] = filtered_value;
       });
