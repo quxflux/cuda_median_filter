@@ -76,18 +76,13 @@ namespace quxflux
           config::shared_buf_row_pitch,
         };
 
-        {
-          const auto block_idx_y = idx.get_group().get_group_id()[0];
-          const auto block_idx_x = idx.get_group().get_group_id()[1];
-          const std::int32_t apron_origin_y = config::num_pixels_y * block_idx_y - config::filter_radius;
-          const std::int32_t apron_origin_x = config::num_pixels_x * block_idx_x - config::filter_radius;
-
-          detail::load_apron<T, config::block_size, config::apron_width, config::apron_height>(
-            shared_accessor,
-            pitched_array_image_source<T>{input.template get_multi_ptr<sycl::access::decorated::no>().get(), img_bounds,
-                                          src_pitch_bytes},
-            point<std::int32_t>{apron_origin_x, apron_origin_y}, point<std::int32_t>{local_index_x, local_index_y});
-        }
+        detail::load_apron<T, config>(
+          shared_accessor,
+          pitched_array_image_source<T>{input.template get_multi_ptr<sycl::access::decorated::no>().get(), img_bounds,
+                                        src_pitch_bytes},
+          point<std::int32_t>{static_cast<std::int32_t>(idx.get_group().get_group_id()[1]),
+                              static_cast<std::int32_t>(idx.get_group().get_group_id()[0])},
+          point<std::int32_t>{local_index_x, local_index_y});
 
         group_barrier(idx.get_group());
 

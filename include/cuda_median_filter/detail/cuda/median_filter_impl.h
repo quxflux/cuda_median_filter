@@ -46,21 +46,13 @@ namespace quxflux::detail
       using T = typename ImageSource::value_type;
       using config = KernelConfig;
 
-      const std::int32_t tidx_y = static_cast<std::int32_t>(threadIdx.y);
-      const std::int32_t tidx_x = static_cast<std::int32_t>(threadIdx.x);
+      const point local_idx{static_cast<std::int32_t>(threadIdx.x), static_cast<std::int32_t>(threadIdx.y)};
+      const point block_idx{static_cast<std::int32_t>(blockIdx.x), static_cast<std::int32_t>(blockIdx.y)};
 
       extern __shared__ byte shared_buf_data[];
-
       const pitched_array_accessor<T> shared_buf(shared_buf_data, config::shared_buf_row_pitch);
 
-      {
-        const std::int32_t apron_origin_y = config::num_pixels_y * blockIdx.y - config::filter_radius;
-        const std::int32_t apron_origin_x = config::num_pixels_x * blockIdx.x - config::filter_radius;
-
-        load_apron<T, config::block_size, config::apron_width, config::apron_height>(
-          shared_buf, img_source, point<std::int32_t>{apron_origin_x, apron_origin_y},
-          point<std::uint32_t>{threadIdx.x, threadIdx.y});
-      }
+      load_apron<T, config>(shared_buf, img_source, block_idx, local_idx);
       __syncthreads();
 
       using sorting_t = std::conditional_t<config::vectorize, unsigned int, T>;
@@ -75,34 +67,33 @@ namespace quxflux::detail
         static_for_2d<config::filter_size, config::filter_size>([&](const auto idx) {
           const std::int32_t dy = idx.y - config::filter_radius;
           const std::int32_t dx = idx.x - config::filter_radius;
-          const std::int32_t apron_y = tidx_y + config::filter_radius + dy;
+
+          const point apron_idx = {local_idx.x * config::items_per_thread + config::filter_radius + dx,
+                                   local_idx.y + config::filter_radius + dy};
 
           if constexpr (config::vectorize)
           {
-            const std::int32_t apron_x = tidx_x * config::items_per_thread + config::filter_radius + dx;
-
             unsigned int r;
 
-            const bool is_aligned_access = apron_x % 4 == 0;
+            const bool is_aligned_access = apron_idx.x % 4 == 0;
 
             if (is_aligned_access)
             {
               r = reinterpret_cast<const unsigned int&>(
-                *calculate_pitched_address<>(shared_buf_data, config::shared_buf_row_pitch, apron_x, apron_y));
+                *calculate_pitched_address<>(shared_buf_data, config::shared_buf_row_pitch, apron_idx.x, apron_idx.y));
             } else
             {
               auto& v = reinterpret_cast<uchar4&>(r);
-              v.x = shared_buf.get({apron_x + 0, apron_y});
-              v.y = shared_buf.get({apron_x + 1, apron_y});
-              v.z = shared_buf.get({apron_x + 2, apron_y});
-              v.w = shared_buf.get({apron_x + 3, apron_y});
+              v.x = shared_buf.get({apron_idx.x + 0, apron_idx.y});
+              v.y = shared_buf.get({apron_idx.x + 1, apron_idx.y});
+              v.z = shared_buf.get({apron_idx.x + 2, apron_idx.y});
+              v.w = shared_buf.get({apron_idx.x + 3, apron_idx.y});
             }
 
             *(it++) = r;
           } else
           {
-            const std::int32_t apron_x = tidx_x + config::filter_radius + dx;
-            *(it++) = shared_buf.get({apron_x, apron_y});
+            *(it++) = shared_buf.get(apron_idx);
           }
         });
 
@@ -129,19 +120,19 @@ namespace quxflux::detail
         filtered_value = *(local_neighborhood_pixels.begin() + (config::filter_size * config::filter_size) / 2);
       }
 
-      const std::int32_t global_thread_idx_y = tidx_y + config::num_pixels_y * blockIdx.y;
-      const std::int32_t global_thread_idx_x = tidx_x * config::items_per_thread +
-                                               config::num_pixels_x * (std::int32_t)blockIdx.x;
+      const point<std::int32_t> global_idx = {local_idx.x * config::items_per_thread +
+                                                config::num_pixels_x * block_idx.x,
+                                              local_idx.y + config::num_pixels_y * block_idx.y};
 
-      if (inside_bounds<std::int32_t>({global_thread_idx_x, global_thread_idx_y}, img_source.bounds()))
+      if (inside_bounds(global_idx, img_source.bounds()))
       {
         if constexpr (config::vectorize)
         {
-          reinterpret_cast<unsigned int&>(*calculate_pitched_address<>(
-            dst.data_ptr(), dst.row_pitch(), global_thread_idx_x, global_thread_idx_y)) = filtered_value;
+          reinterpret_cast<unsigned int&>(
+            *calculate_pitched_address<>(dst.data_ptr(), dst.row_pitch(), global_idx.x, global_idx.y)) = filtered_value;
         } else
         {
-          dst.set(filtered_value, {global_thread_idx_x, global_thread_idx_y});
+          dst.set(filtered_value, global_idx);
         }
       }
     }
@@ -156,7 +147,8 @@ namespace quxflux::detail
 
     constexpr std::int32_t N = ExpertSettings::block_size;
 
-    static constexpr auto vectorization_allowed = FilterSize <= ExpertSettings::max_filter_size_allowed_for_vectorization;
+    static constexpr auto vectorization_allowed = FilterSize <=
+                                                  ExpertSettings::max_filter_size_allowed_for_vectorization;
 
     using filter_config =
       std::conditional_t<vectorization_allowed,
