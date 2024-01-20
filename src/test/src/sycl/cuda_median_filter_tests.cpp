@@ -31,15 +31,14 @@ namespace quxflux
 {
   namespace
   {
-    using types_to_test =
-      rewrap_list<::testing::Types,
-                  generate_all_filter_specs<false, metal::list<std::uint8_t, std::uint16_t, std::uint32_t, float>,
-                                            metal::numbers<1, 3, 5, 7>>>;
+    using types_to_test = generate_all_filter_test_specs<do_not_test_vectorized,
+                                                         metal::list<std::uint8_t, std::uint16_t, std::uint32_t, float>,
+                                                         metal::numbers<1, 3, 5, 7>>;
 
-    template<typename FilterSpec>
+    template<typename>
     struct sycl_filter_impl_test : ::testing::Test
     {};
-    TYPED_TEST_SUITE(sycl_filter_impl_test, types_to_test, filter_type_name);
+    TYPED_TEST_SUITE(sycl_filter_impl_test, types_to_test, generate_filter_test_spec_name);
 
     template<typename T>
     std::span<T> reinterpret_as(const std::span<byte> bytes)
@@ -47,7 +46,6 @@ namespace quxflux
       return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
     }
   }  // namespace
-
 
   TYPED_TEST(sycl_filter_impl_test, call_with_empty_image_does_not_fail)
   {

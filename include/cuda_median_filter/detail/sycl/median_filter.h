@@ -42,9 +42,14 @@ namespace quxflux
       return point<std::int32_t>::from_any(sycl_id[1], sycl_id[0]);
     }
 
-    constexpr auto get_ptr(auto& accessor_like)
+    constexpr auto* get_ptr(auto& accessor_like)
     {
-      return accessor_like.template get_multi_ptr<sycl::access::decorated::no>().get();
+      auto* t = accessor_like.template get_multi_ptr<sycl::access::decorated::no>().get();
+
+      if constexpr (std::is_const_v<std::remove_pointer_t<decltype(t)>>)
+        return reinterpret_cast<const byte*>(t);
+      else
+        return reinterpret_cast<byte*>(t);
     }
   }  // namespace detail
 
@@ -66,6 +71,9 @@ namespace quxflux
     const auto actual_width = width_if_src_is_pitched.value_or(static_cast<int32_t>(src.get_range()[1]));
 
     const bounds<std::int32_t> img_bounds{actual_width, static_cast<int32_t>(src.get_range()[0])};
+
+    if (img_bounds.width * img_bounds.height == 0)
+      return;
 
     queue.submit([&](sycl::handler& handler) {
       sycl::accessor input{src, sycl::read_only};

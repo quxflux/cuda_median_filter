@@ -18,8 +18,10 @@
 
 #include <shared/type_names.h>
 
+#include <gmock/gmock.h>
 #include <metal.hpp>
 
+#include <string>
 #include <tuple>
 #include <type_traits>
 
@@ -52,9 +54,12 @@ namespace quxflux
         return {};
       }
     };
+
+    template<template<typename...> typename VariadicTemplate, typename List>
+    using rewrap_list = decltype(detail::rewrap_list_impl<VariadicTemplate>{}(List{}));
   }  // namespace detail
 
-  struct filter_type_name
+  struct generate_filter_test_spec_name
   {
     template<typename T>
     static std::string GetName(int)
@@ -64,13 +69,18 @@ namespace quxflux
     }
   };
 
-  template<bool AllowVectorization, typename DataTypes, typename FilterSizes>
-  using generate_all_filter_specs =
-    decltype(detail::generate_all_filter_specs_impl<
-             std::conditional_t<AllowVectorization, metal::list<std::true_type, std::false_type>,
-                                metal::list<std::false_type>>,
-             DataTypes, FilterSizes>());
+  struct test_vectorized
+  {};
 
-  template<template<typename...> typename VariadicTemplate, typename List>
-  using rewrap_list = decltype(detail::rewrap_list_impl<VariadicTemplate>{}(List{}));
+  struct do_not_test_vectorized
+  {};
+
+  template<typename Vectorization, typename DataTypes, typename FilterSizes>
+  using generate_all_filter_test_specs = detail::rewrap_list<
+    ::testing::Types,
+    decltype(detail::generate_all_filter_specs_impl<
+             std::conditional_t<std::is_same_v<Vectorization, test_vectorized>,
+                                metal::list<std::true_type, std::false_type>, metal::list<std::false_type>>,
+             DataTypes, FilterSizes>())>;
+
 }  // namespace quxflux
