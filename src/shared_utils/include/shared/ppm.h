@@ -30,7 +30,7 @@
 
 namespace quxflux
 {
-  [[nodiscard]] inline image<std::uint8_t> import_grayscale_ppm(const std::filesystem::path& path)
+  [[nodiscard]] inline image<std::uint8_t> import_pgm(const std::filesystem::path& path)
   {
     std::ifstream ifs(path, std::ios_base::binary);
 
@@ -61,9 +61,10 @@ namespace quxflux
     ifs >> width >> height >> max_val;
 
     if (max_val != 255)
-      throw std::runtime_error("Unsupported PPM file format");
+      throw std::runtime_error(std::string{"Unsupported PPM file format (was expecting 255 as max value, but got "} +
+                               std::to_string(max_val) + ")");
 
-    ifs.ignore(1);
+        ifs.ignore(1);
 
     image<std::uint8_t> image = make_host_image<std::uint8_t>({height, width});
 
@@ -73,7 +74,7 @@ namespace quxflux
     return image;
   }
 
-  inline void export_grayscale_ppm(const image<std::uint8_t>& image, const std::filesystem::path& path)
+  inline void export_pgm(const image<std::uint8_t>& image, const std::filesystem::path& path)
   {
     std::ofstream ofs(path, std::ios_base::binary);
 

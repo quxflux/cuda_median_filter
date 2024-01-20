@@ -125,7 +125,7 @@ int main(int argc, char** args)
             std::stringstream ss;
             ss << "./" << num_megapixels << "_" << filter_config << ".ppm";
 
-            export_grayscale_ppm(dst_image, ss.str());
+            export_pgm(dst_image, ss.str());
           }
 
           const auto num_milliseconds =

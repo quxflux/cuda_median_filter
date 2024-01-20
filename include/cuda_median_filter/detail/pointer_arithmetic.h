@@ -18,6 +18,8 @@
 
 #include <cuda_median_filter/detail/primitives.h>
 
+#include <cstdint>
+
 namespace quxflux
 {
   template<typename T = byte, typename ByteT>

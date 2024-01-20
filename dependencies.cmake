@@ -25,3 +25,7 @@ function(add_gtest)
                 "INSTALL_GTEST OFF"
     )
 endfunction()
+
+function(add_lyra)
+    CPMAddPackage("gh:bfgroup/lyra#1.6.1")
+endfunction()
