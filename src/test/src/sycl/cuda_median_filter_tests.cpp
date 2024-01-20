@@ -57,7 +57,7 @@ namespace quxflux
   {
     using T = typename TypeParam::value_type;
 
-    static constexpr auto bounds = ::quxflux::bounds<std::int32_t>{128, 256};
+    static constexpr auto bounds = ::quxflux::bounds<std::int32_t>{113, 259};
 
     image<T> input = make_host_image<T>(bounds);
     image<T> expected = make_host_image<T>(bounds);

@@ -85,7 +85,8 @@ namespace quxflux
       auto local_mem = sycl::local_accessor<byte, 1>(config::shared_buf_size, handler);
 
       const auto nd_range = sycl::nd_range<2>{
-        {static_cast<size_t>(img_bounds.height), static_cast<size_t>(img_bounds.width)},
+        {static_cast<size_t>(int_div_ceil(img_bounds.height, config::block_size) * config::block_size),
+         static_cast<size_t>(int_div_ceil(img_bounds.width, config::block_size) * config::block_size)},
         {config::block_size, config::block_size},
       };
 
