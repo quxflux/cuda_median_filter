@@ -24,6 +24,10 @@ if (BENCHMARK_NPP)
     list(APPEND source_files src/impls/npp/create_npp_median_filter_impls.cpp)
 endif()
 
+if (CUDA_MEDIAN_FILTER_ENABLE_SYCL)
+    list(APPEND source_files src/impls/cuda_median_filter_sycl/create_cuda_median_filter_sycl_impls.cpp)
+endif()
+
 add_metal()
 
 add_executable(${PROJECT_NAME} ${source_files})
@@ -51,6 +55,10 @@ endif()
 
 if (BENCHMARK_OPENCV_CUDA)
     list(APPEND dependencies opencv_cudafilters opencv_cudaarithm)
+endif()
+
+if (CUDA_MEDIAN_FILTER_ENABLE_SYCL)
+    target_link_libraries(${PROJECT_NAME} PRIVATE sycl_target)
 endif()
 
 foreach (dependency ${dependencies})

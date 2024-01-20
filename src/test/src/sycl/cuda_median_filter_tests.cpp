@@ -23,6 +23,7 @@
 
 #include <shared/fill_image_random.h>
 #include <shared/image.h>
+#include <shared/reinterpret_as.h>
 
 #include <gmock/gmock.h>
 #include <metal.hpp>
@@ -39,12 +40,6 @@ namespace quxflux
     struct sycl_filter_impl_test : ::testing::Test
     {};
     TYPED_TEST_SUITE(sycl_filter_impl_test, types_to_test, generate_filter_test_spec_name);
-
-    template<typename T>
-    std::span<T> reinterpret_as(const std::span<byte> bytes)
-    {
-      return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
-    }
   }  // namespace
 
   TYPED_TEST(sycl_filter_impl_test, call_with_empty_image_does_not_fail)
