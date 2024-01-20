@@ -27,7 +27,8 @@
 #include <shared/cuda/image_transfer.h>
 #include <shared/cuda/stream_handle.h>
 #include <shared/cuda/texture_handle.h>
-#include <shared/type_names.h>
+
+#include <metal.hpp>
 
 #include <array>
 #include <string>
@@ -39,22 +40,13 @@ namespace quxflux
   {
     using types_to_test =
       rewrap_list<::testing::Types,
-                  generate_all_filter_specs<metal::list<std::uint8_t, std::uint16_t, std::uint32_t, float>,
+                  generate_all_filter_specs<true, metal::list<std::uint8_t, std::uint16_t, std::uint32_t, float>,
                                             metal::numbers<1, 3, 5, 7>>>;
 
-    struct test_type_name_generator
-    {
-      template<typename T>
-      static std::string GetName(int)
-      {
-        const auto type_name = std::string{to_string(typeid(typename T::value_type))};
-        return type_name + "_" + std::to_string(T::filter_size);
-      }
-    };
-
     template<typename FilterSpec>
-    struct filter_impl_test : ::testing::Test
+    struct cuda_filter_impl_test : ::testing::Test
     {};
+    TYPED_TEST_SUITE(cuda_filter_impl_test, types_to_test, filter_type_name);
 
     namespace image_source_type
     {
@@ -89,8 +81,8 @@ namespace quxflux
         {
           const texture_handle<T> tex(gpu_img_src.data_ptr(), gpu_img_src.bounds(), gpu_img_src.row_pitch_in_bytes());
 
-          median_2d_async<T, FilterSpec::filter_size>(tex, gpu_img_result.data_ptr(), gpu_img_result.row_pitch_in_bytes(),
-                                                      bounds.width, bounds.height, stream);
+          median_2d_async<T, FilterSpec::filter_size>(
+            tex, gpu_img_result.data_ptr(), gpu_img_result.row_pitch_in_bytes(), bounds.width, bounds.height, stream);
 
         } else if constexpr (std::is_same_v<ImageSourceType, image_source_type::pitched_array_2d>)
         {
@@ -104,12 +96,9 @@ namespace quxflux
 
       EXPECT_THAT(cpu_buf, is_equal_to_image(expected));
     }
-
   }  // namespace
 
-  TYPED_TEST_SUITE(filter_impl_test, types_to_test, test_type_name_generator);
-
-  TYPED_TEST(filter_impl_test, call_with_empty_image_does_not_fail)
+  TYPED_TEST(cuda_filter_impl_test, call_with_empty_image_does_not_fail)
   {
     using T = typename TypeParam::value_type;
 
@@ -121,12 +110,12 @@ namespace quxflux
       gpu_img_dst.row_pitch_in_bytes(), gpu_img_src.bounds().width, gpu_img_src.bounds().height)));
   }
 
-  TYPED_TEST(filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source)
+  TYPED_TEST(cuda_filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source)
   {
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::pitched_array_2d{});
   }
 
-  TYPED_TEST(filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_texture_image_source)
+  TYPED_TEST(cuda_filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_texture_image_source)
   {
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::texture{});
   }

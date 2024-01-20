@@ -1,5 +1,5 @@
 // This file is part of the cuda_median_filter (https://github.com/quxflux/cuda_median_filter).
-// Copyright (c) 2022 Lukas Riebel.
+// Copyright (c) 2024 Lukas Riebel.
 //
 // cuda_median_filter is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 #include <cuda_median_filter/cuda_median_filter.h>
 #include <cuda_median_filter/detail/primitives.h>
 
+#include <util/filter_types_factory.h>
 #include <util/image_matcher.h>
 #include <util/naive_median_filter_impl.h>
 
@@ -24,34 +25,66 @@
 #include <shared/image.h>
 
 #include <gmock/gmock.h>
+#include <metal.hpp>
 
 namespace quxflux
 {
-  TEST(sycl_impl, test_compile)
+  namespace
   {
-    using T = std::uint8_t;
-    static constexpr size_t filter_size = 5;
-    constexpr auto bounds = ::quxflux::bounds<std::int32_t>{128, 256};
+    using types_to_test =
+      rewrap_list<::testing::Types,
+                  generate_all_filter_specs<false, metal::list<std::uint8_t, std::uint16_t, std::uint32_t, float>,
+                                            metal::numbers<1, 3, 5, 7>>>;
 
-    image<T> input_image = make_host_image<T>(bounds);
-    fill_image_random(input_image);
+    template<typename FilterSpec>
+    struct sycl_filter_impl_test : ::testing::Test
+    {};
+    TYPED_TEST_SUITE(sycl_filter_impl_test, types_to_test, filter_type_name);
 
+    template<typename T>
+    std::span<T> reinterpret_as(const std::span<byte> bytes)
+    {
+      return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
+    }
+  }  // namespace
+
+
+  TYPED_TEST(sycl_filter_impl_test, call_with_empty_image_does_not_fail)
+  {
+    using T = typename TypeParam::value_type;
+    sycl::queue queue;
+
+    sycl::buffer<T, 2> gpu_img_src(nullptr, sycl::range<2>{});
+    sycl::buffer<T, 2> gpu_img_dst(nullptr, sycl::range<2>{});
+
+    EXPECT_NO_THROW(median_2d_async<TypeParam::filter_size>(gpu_img_src, gpu_img_dst, queue, 0));
+  }
+
+  TYPED_TEST(sycl_filter_impl_test, gpu_result_equals_naive_cpu_implementation)
+  {
+    using T = typename TypeParam::value_type;
+
+    static constexpr auto bounds = ::quxflux::bounds<std::int32_t>{128, 256};
+
+    image<T> input = make_host_image<T>(bounds);
     image<T> expected = make_host_image<T>(bounds);
-    filter_image<filter_size, T>(input_image, expected);
 
-    image<T> output_image = make_host_image<T>(bounds);
+    fill_image_random(input);
+    filter_image<TypeParam::filter_size, T>(input, expected);
+
+    image<T> output = make_host_image<T>(bounds);
 
     const sycl::range<2> sycl_image_range = {static_cast<size_t>(bounds.height),
-                                             input_image.row_pitch_in_bytes() / sizeof(T)};
+                                             input.row_pitch_in_bytes() / sizeof(T)};
 
-    sycl::buffer<T, 2> sycl_input_buf{input_image.data_ptr(), sycl_image_range};
-    sycl::buffer<T, 2> sycl_output_buf{output_image.data_ptr(), sycl_image_range};
+    sycl::buffer<T, 2> sycl_input_buf{reinterpret_as<T>(input.data()).data(), sycl_image_range};
+    sycl::buffer<T, 2> sycl_output_buf{reinterpret_as<T>(output.data()).data(), sycl_image_range};
 
     sycl::queue queue;
-    median_2d_async<filter_size>(sycl_input_buf, sycl_output_buf, queue, bounds.width);
+    median_2d_async<TypeParam::filter_size>(sycl_input_buf, sycl_output_buf, queue, bounds.width);
 
     sycl_output_buf.get_host_access();
 
-    EXPECT_THAT(output_image, is_equal_to_image(expected));
+    EXPECT_THAT(output, is_equal_to_image(expected));
   }
 }  // namespace quxflux

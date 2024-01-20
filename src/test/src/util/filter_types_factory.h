@@ -16,26 +16,29 @@
 
 #pragma once
 
-#include <tuple>
-#include <type_traits>
+#include <shared/type_names.h>
 
 #include <metal.hpp>
 
+#include <tuple>
+#include <type_traits>
+
 namespace quxflux
 {
-  template<typename DataType, typename FilterSize>
+  template<typename UseVectorization, typename DataType, typename FilterSize>
   struct filter_spec
   {
     using value_type = DataType;
-    static constexpr inline auto filter_size = FilterSize::value;
+    static constexpr auto filter_size = FilterSize::value;
+    static constexpr auto vectorize = UseVectorization::value;
   };
 
   namespace detail
   {
-    template<typename DataTypes, typename FilterSizes>
+    template<typename VectorizationFlags, typename DataTypes, typename FilterSizes>
     constexpr auto generate_all_filter_specs_impl()
       -> metal::transform<metal::partial<metal::lambda<metal::apply>, metal::lambda<filter_spec>>,
-                          metal::cartesian<DataTypes, FilterSizes>>
+                          metal::cartesian<VectorizationFlags, DataTypes, FilterSizes>>
     {
       return {};
     }
@@ -51,8 +54,22 @@ namespace quxflux
     };
   }  // namespace detail
 
-  template<typename DataTypes, typename FilterSizes>
-  using generate_all_filter_specs = decltype(detail::generate_all_filter_specs_impl<DataTypes, FilterSizes>());
+  struct filter_type_name
+  {
+    template<typename T>
+    static std::string GetName(int)
+    {
+      const auto type_name = std::string{to_string(typeid(typename T::value_type))};
+      return type_name + "_" + std::to_string(T::filter_size) + (T::vectorize ? "_vectorized" : "");
+    }
+  };
+
+  template<bool AllowVectorization, typename DataTypes, typename FilterSizes>
+  using generate_all_filter_specs =
+    decltype(detail::generate_all_filter_specs_impl<
+             std::conditional_t<AllowVectorization, metal::list<std::true_type, std::false_type>,
+                                metal::list<std::false_type>>,
+             DataTypes, FilterSizes>());
 
   template<template<typename...> typename VariadicTemplate, typename List>
   using rewrap_list = decltype(detail::rewrap_list_impl<VariadicTemplate>{}(List{}));
