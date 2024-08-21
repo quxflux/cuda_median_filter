@@ -34,7 +34,7 @@ namespace quxflux
     const bounds<std::int32_t> img_bounds{width, height};
 
     texture_image_source<T> texture_image_source(src_texture, img_bounds);
-    pitched_array_image_target<T> array2d_image_target(static_cast<byte*>(dst), img_bounds, dst_pitch_in_bytes);
+    pitched_array_image_target<T> array2d_image_target(static_cast<std::byte*>(dst), img_bounds, dst_pitch_in_bytes);
 
     detail::median_2d_async<FilterSize, ExpertSettings>(texture_image_source, array2d_image_target, stream);
   }
@@ -46,8 +46,9 @@ namespace quxflux
   {
     const bounds<std::int32_t> img_bounds{width, height};
 
-    pitched_array_image_source<T> array2d_image_source(static_cast<const byte*>(src), img_bounds, src_pitch_in_bytes);
-    pitched_array_image_target<T> array2d_image_target(static_cast<byte*>(dst), img_bounds, dst_pitch_in_bytes);
+    pitched_array_image_source<T> array2d_image_source(static_cast<const std::byte*>(src), img_bounds,
+                                                       src_pitch_in_bytes);
+    pitched_array_image_target<T> array2d_image_target(static_cast<std::byte*>(dst), img_bounds, dst_pitch_in_bytes);
 
     detail::median_2d_async<FilterSize, ExpertSettings>(array2d_image_source, array2d_image_target, stream);
   }

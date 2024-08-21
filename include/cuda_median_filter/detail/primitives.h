@@ -21,8 +21,6 @@
 
 namespace quxflux
 {
-  using byte = unsigned char;
-
   template<typename... Ops>
   constexpr bool eager_logical_and(Ops... ops)
   {
@@ -35,8 +33,7 @@ namespace quxflux
     T width{};
     T height{};
 
-    constexpr bool operator==(const bounds& rhs) const noexcept { return rhs.width == width && rhs.height == height; }
-    constexpr bool operator!=(const bounds& rhs) const noexcept { return !(*this == rhs); }
+    constexpr bool operator==(const bounds&) const = default;
   };
 
   template<typename T>
@@ -45,8 +42,7 @@ namespace quxflux
     T x{};
     T y{};
 
-    constexpr bool operator==(const point& rhs) const noexcept { return rhs.x == x && rhs.y == y; }
-    constexpr bool operator!=(const point& rhs) const noexcept { return !(*this == rhs); }
+    constexpr bool operator==(const point&) const = default;
   };
 
   template<typename T>

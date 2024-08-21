@@ -27,4 +27,10 @@ namespace quxflux
 
     return x == 0 ? 0 : 1 + ((x - 1) / y);
   }
+
+  template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+  constexpr T pad(const T x, const T padding)
+  {
+    return int_div_ceil(x, padding) * padding;
+  }
 }  // namespace quxflux

@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#include <gtest/gtest.h>
+#include <cuda_median_filter/cuda_median_filter.h>
 
 #include <filter_types_factory.h>
 #include <image_matcher.h>
-#include <median_filter_impl.h>
+#include <naive_median_filter_impl.h>
 
 #include <shared/fill_image_random.h>
 #include <shared/gpu_image.h>
@@ -26,6 +26,8 @@
 #include <shared/stream_handle.h>
 #include <shared/texture_handle.h>
 #include <shared/type_names.h>
+
+#include <gtest/gtest.h>
 
 #include <array>
 #include <string_view>
@@ -132,9 +134,3 @@ namespace quxflux
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::texture{});
   }
 }  // namespace quxflux
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
