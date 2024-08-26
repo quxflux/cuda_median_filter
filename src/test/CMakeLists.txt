@@ -6,6 +6,7 @@ add_executable(${PROJECT_NAME}
     src/cuda_median_filter_tests.cu
     src/image_filter_config.cpp
     src/load_neighbor_pixels.cpp
+    src/math.cpp
     src/static_for.cpp
 )
 
