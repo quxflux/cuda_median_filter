@@ -64,15 +64,20 @@ namespace quxflux
   template<std::int32_t ExtentY, std::int32_t ExtentX, typename F>
   constexpr void static_for_2d(F&& f)
   {
+    static_assert(ExtentX >= 0 && ExtentY >= 0, "ExtentX and ExtentY must be greater than 0");
+
     using start = detail::constant_index2d_iterator<0, 0, ExtentX>;
     using end = detail::constant_index2d_iterator<0, ExtentY, ExtentX>;
 
-    detail::static_for_impl<start, end>(std::forward<F>(f));
+    if constexpr (ExtentY * ExtentX > 0)
+      detail::static_for_impl<start, end>(std::forward<F>(f));
   }
 
   template<std::int32_t N, typename F>
   constexpr void static_for(F&& f)
   {
+    static_assert(N >= 0, "N must be greater or equal to 0");
+
     using start = std::integral_constant<std::int32_t, 0>;
     using end = std::integral_constant<std::int32_t, N>;
 

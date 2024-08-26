@@ -1,6 +1,6 @@
 #include <cuda_median_filter/detail/image_filter_config.h>
 
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <cstdint>
 
