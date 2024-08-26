@@ -32,11 +32,11 @@ namespace quxflux::detail
                                                                     31, 32, 33, 34, 35, 36};
 
       // indicates a non-written pixel
-      static constexpr int NA = -1;
+      static constexpr int NW = -1;
 
       std::array<int, 4 * 4> output_pixel_values = [] {
         std::array<int, 4 * 4> result{};
-        std::ranges::fill(result, NA);
+        std::ranges::fill(result, NW);
         return result;
       }();
 
@@ -48,15 +48,14 @@ namespace quxflux::detail
 
   TEST_F(load_neighbor_pixels_test, dst_holds_expected_data_for_single_thread)
   {
-    constexpr std::int32_t block_size = 2;
-    constexpr std::int32_t filter_radius = 1;
-    load_neighbor_pixels<int, config<block_size, filter_radius>>(dst, src, {0, 0}, {1, 1});
+    load_neighbor_pixels<int, load_neighbor_params{.block_size = 2, .filter_size = 3, .local_bounds = {2, 2}}>(
+      dst, src, {0, 0}, {1, 1});
 
     constexpr std::array<int, 4 * 4> expected_pixel_values{
-      NA, NA, NA, NA,  //
-      NA, 1,  NA, 3,   //
-      NA, NA, NA, NA,  //
-      NA, 13, NA, 15,  //
+      NW, NW, NW, NW,  //
+      NW, 1,  NW, 3,   //
+      NW, NW, NW, NW,  //
+      NW, 13, NW, 15,  //
     };
 
     EXPECT_THAT(output_pixel_values, ::testing::ElementsAreArray(expected_pixel_values));
@@ -64,15 +63,14 @@ namespace quxflux::detail
 
   TEST_F(load_neighbor_pixels_test, dst_holds_expected_data_for_single_thread_when_apron_is_offset)
   {
-    constexpr std::int32_t block_size = 2;
-    constexpr std::int32_t filter_radius = 1;
-    load_neighbor_pixels<int, config<block_size, filter_radius>>(dst, src, {1, 0}, {0, 0});
+     load_neighbor_pixels<int, load_neighbor_params{.block_size = 2, .filter_size = 3, .local_bounds = {2, 2}}>(
+      dst, src, {1, 0}, {0, 0});
 
     constexpr std::array<int, 4 * 4> expected_pixel_values{
-      0,  NA, 0,  NA,  //
-      NA, NA, NA, NA,  //
-      8,  NA, 10, NA,  //
-      NA, NA, NA, NA,  //
+      0,  NW, 0,  NW,  //
+      NW, NW, NW, NW,  //
+      8,  NW, 10, NW,  //
+      NW, NW, NW, NW,  //
     };
 
     EXPECT_THAT(output_pixel_values, ::testing::ElementsAreArray(expected_pixel_values));
@@ -80,14 +78,12 @@ namespace quxflux::detail
 
   TEST_F(load_neighbor_pixels_test, dst_holds_expected_data_for_all_block_threads_when_at_border)
   {
-    constexpr std::int32_t block_size = 2;
-    constexpr std::int32_t filter_radius = 1;
-
     constexpr point<std::int32_t> apron_offset{0, 0};
 
-    static_for_2d<block_size, block_size>([&](const auto idx) {
-      load_neighbor_pixels<int, config<block_size, filter_radius>>(dst, src, apron_offset, {idx.x, idx.y});
-    });
+    for (std::int32_t y = 0; y < 4; ++y)
+      for (std::int32_t x = 0; x < 4; ++x)
+        load_neighbor_pixels<int, load_neighbor_params{.block_size = 2, .filter_size = 3, .local_bounds = {2, 2}}>(
+          dst, src, apron_offset, {x, y});
 
     constexpr std::array<int, 4 * 4> expected_pixel_values{
       0, 0,  0,  0,   //
@@ -101,14 +97,12 @@ namespace quxflux::detail
 
   TEST_F(load_neighbor_pixels_test, dst_holds_expected_data_for_all_block_threads_when_in_inner)
   {
-    constexpr std::int32_t block_size = 2;
-    constexpr std::int32_t filter_radius = 1;
-
     constexpr point<std::int32_t> apron_offset{1, 1};
 
-    static_for_2d<block_size, block_size>([&](const auto idx) {
-      load_neighbor_pixels<int, config<block_size, filter_radius>>(dst, src, apron_offset, {idx.x, idx.y});
-    });
+    for (std::int32_t y = 0; y < 4; ++y)
+      for (std::int32_t x = 0; x < 4; ++x)
+        load_neighbor_pixels<int, load_neighbor_params{.block_size = 2, .filter_size = 3, .local_bounds = {2, 2}}>(
+          dst, src, apron_offset, {x, y});
 
     constexpr std::array<int, 4 * 4> expected_pixel_values{
       8,  9,  10, 11,  //

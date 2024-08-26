@@ -2,7 +2,7 @@ project(cuda_median_filter_tests)
 
 include(GoogleTest)
 
-add_executable(${PROJECT_NAME} src/cuda_median_filter_tests.cu src/load_neighbor_pixels.cpp)
+add_executable(${PROJECT_NAME} src/cuda_median_filter_tests.cu src/load_neighbor_pixels.cpp src/image_filter_config.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
