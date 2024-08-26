@@ -7,6 +7,7 @@ add_executable(${PROJECT_NAME}
     src/image_filter_config.cpp
     src/load_neighbor_pixels.cpp
     src/math.cpp
+    src/pointer_arithmetic.cpp
     src/static_for.cpp
 )
 

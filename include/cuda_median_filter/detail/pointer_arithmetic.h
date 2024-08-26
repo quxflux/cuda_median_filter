@@ -18,6 +18,7 @@
 
 #include <cuda_median_filter/detail/primitives.h>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace quxflux
