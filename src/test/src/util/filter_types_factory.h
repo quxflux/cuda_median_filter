@@ -25,11 +25,12 @@
 
 namespace quxflux
 {
-  template<typename DataType, typename FilterSize>
+  template<typename DataType, typename FilterSize, typename Vectorize>
   struct filter_spec
   {
     using value_type = DataType;
     static constexpr inline auto filter_size = FilterSize::value;
+    static constexpr inline auto vectorize = Vectorize::value;
   };
 
   namespace detail
@@ -37,7 +38,7 @@ namespace quxflux
     template<typename DataTypes, typename FilterSizes>
     auto generate_all_filter_specs_impl()
       -> metal::transform<metal::partial<metal::lambda<metal::apply>, metal::lambda<filter_spec>>,
-                          metal::cartesian<DataTypes, FilterSizes>>
+                          metal::cartesian<DataTypes, FilterSizes, metal::list<std::false_type, std::true_type>>>
     {
       return {};
     }
