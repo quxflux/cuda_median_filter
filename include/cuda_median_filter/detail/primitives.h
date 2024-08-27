@@ -16,12 +16,18 @@
 
 #pragma once
 
+#include <utility>
+
 namespace quxflux
 {
+  /*
+  * Opposed to regular logical operators, eager_logical_and does not short-circuit.
+  * This can help to reduce the amount of generated code and branch-divergence.
+  */
   template<typename... Ops>
-  constexpr bool eager_logical_and(Ops... ops)
+  constexpr bool eager_logical_and(Ops&&... ops)
   {
-    return (ops && ...);
+    return (std::forward<Ops>(ops) & ...);
   }
 
   template<typename T>
