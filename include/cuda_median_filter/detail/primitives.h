@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <algorithm>
-#include <numeric>
-
 namespace quxflux
 {
   template<typename... Ops>

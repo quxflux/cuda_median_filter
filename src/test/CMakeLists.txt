@@ -8,6 +8,7 @@ add_executable(${PROJECT_NAME}
     src/load_neighbor_pixels.cpp
     src/math.cpp
     src/pointer_arithmetic.cpp
+    src/primitives.cpp
     src/static_for.cpp
 )
 
