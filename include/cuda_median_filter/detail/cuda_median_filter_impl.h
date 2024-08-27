@@ -51,12 +51,13 @@ namespace quxflux::detail
       const idx_2d block_idx = {static_cast<int32_t>(blockIdx.x), static_cast<int32_t>(blockIdx.y)};
 
       extern __shared__ std::byte shared_buf_data[];
-      constexpr auto shared_buf_row_pitch = config::get_shared_buf_row_pitch<T>(BlockSize, FilterSize, SimdWidth);
+      constexpr auto shared_buf_row_pitch = config::calculate_shared_buf_row_pitch<T>(BlockSize, FilterSize, SimdWidth);
       const pitched_array_accessor<T> shared_buf(shared_buf_data, shared_buf_row_pitch);
 
       load_neighbor_pixels<T, load_neighbor_params{.block_size = BlockSize,
                                                    .filter_size = FilterSize,
-                                                   .local_bounds = config::get_block_bounds(BlockSize, SimdWidth)}>  //
+                                                   .local_bounds = config::calculate_block_bounds(BlockSize,
+                                                                                                  SimdWidth)}>  //
         (shared_buf, img_source, block_idx, local_idx);
       __syncthreads();
 
@@ -126,7 +127,7 @@ namespace quxflux::detail
         filtered_value = *(local_neighborhood_pixels.begin() + n_filter_elements / 2);
       }
 
-      constexpr auto local_bounds = config::get_block_bounds(BlockSize, SimdWidth);
+      constexpr auto local_bounds = config::calculate_block_bounds(BlockSize, SimdWidth);
 
       const idx_2d global_idx = {local_idx.x * SimdWidth + local_bounds.width * block_idx.x,
                                  local_idx.y + local_bounds.height * block_idx.y};
@@ -160,14 +161,14 @@ namespace quxflux::detail
     constexpr std::int32_t items_per_thread = FilterSize <= ExpertSettings::max_filter_size_allowed_for_vectorization
                                                 ? simd_width
                                                 : 1;
-    const auto block_bounds = image_filter_config::get_block_bounds(N, items_per_thread);
+    const auto block_bounds = image_filter_config::calculate_block_bounds(N, items_per_thread);
 
     const dim3 block_size(N, N);
     const dim3 grid_size(int_div_ceil(img_dst.bounds().width, block_bounds.width),
                          int_div_ceil(img_dst.bounds().height, block_bounds.height));
 
-    constexpr auto required_shared_buf_size = image_filter_config::get_shared_buf_size<T>(N, FilterSize,
-                                                                                          items_per_thread);
+    constexpr auto required_shared_buf_size = image_filter_config::calculate_required_shared_buf_size<T>(
+      N, FilterSize, items_per_thread);
     kernels::median_2d<FilterSize, N, items_per_thread>
       <<<grid_size, block_size, required_shared_buf_size, stream>>>(img_src, img_dst);
   }
