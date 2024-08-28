@@ -5,7 +5,7 @@ project(cuda_median_filter LANGUAGES CUDA CXX)
 find_package(CUDAToolkit REQUIRED)
 
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:quxflux/sorting_network_cpp#98bfe00")
+CPMAddPackage("gh:quxflux/sorting_network_cpp#0a45cfa")
 
 add_library(cuda_median_filter_project_options INTERFACE)
 target_compile_features(cuda_median_filter_project_options INTERFACE cxx_std_20)
