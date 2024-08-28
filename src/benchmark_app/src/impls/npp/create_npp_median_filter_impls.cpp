@@ -96,11 +96,13 @@ namespace quxflux
 
         const auto src_pitch = gpu_img_source.row_pitch_in_bytes();
         const auto dst_pitch = gpu_img_target.row_pitch_in_bytes();
+        const auto* src_char_ptr = reinterpret_cast<const unsigned char*>(gpu_img_source.data());
+        auto* dst_char_ptr = reinterpret_cast<unsigned char*>(gpu_img_target.data());
 
         npp_call(&nppiFilterMedian_8u_C1R_Ctx,
-                 gpu_img_source.data() + src_pitch * filter_radius + int{sizeof(T)} * filter_radius, src_pitch,
-                 gpu_img_target.data() + dst_pitch * filter_radius + int{sizeof(T)} * filter_radius, dst_pitch, roi,
-                 filter_size, anchor, scratch_buffer.get(), npp_stream_ctxt);
+                 src_char_ptr + src_pitch * filter_radius + int{sizeof(T)} * filter_radius, src_pitch,
+                 dst_char_ptr + dst_pitch * filter_radius + int{sizeof(T)} * filter_radius, dst_pitch, roi, filter_size,
+                 anchor, reinterpret_cast<unsigned char*>(scratch_buffer.get()), npp_stream_ctxt);
 
         transfer(gpu_img_target, target, stream);
 
