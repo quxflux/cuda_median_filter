@@ -14,5 +14,8 @@ target_link_libraries(${PROJECT_NAME}
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-# uncomment to allow for kernel profiling in nvidia visual profiler
-# set_source_files_properties(src/main.cu PROPERTIES COMPILE_OPTIONS "-lineinfo")
+option(CUDA_MEDIAN_FILTER_CLI_APP_ENABLE_PROFILING "Pass -lineinfo to nvcc for cli_app compilation to allow profiling with nvidia visual profiler" OFF)
+
+if (CUDA_MEDIAN_FILTER_CLI_APP_ENABLE_PROFILING)
+    set_source_files_properties(src/main.cu PROPERTIES COMPILE_OPTIONS "-lineinfo")
+endif()

@@ -85,7 +85,7 @@ namespace quxflux
     return std::chrono::duration<float, std::milli>{milliseconds};
   }
 
-  using unique_pitched_device_ptr = std::unique_ptr<byte, detail::cuda_free>;
+  using unique_pitched_device_ptr = std::unique_ptr<std::byte, detail::cuda_free>;
 
   inline auto make_unique_device_pitched(const std::size_t width_in_bytes, const std::size_t height)
   {
@@ -95,11 +95,11 @@ namespace quxflux
     using func_t = cudaError_t (*)(void**, size_t*, size_t, size_t);
     cuda_call<func_t>(&cudaMallocPitch, &ptr, &pitch_in_bytes, width_in_bytes, height);
 
-    return std::make_tuple(std::unique_ptr<byte, detail::cuda_free>(static_cast<byte*>(ptr)),
+    return std::make_tuple(std::unique_ptr<std::byte, detail::cuda_free>(static_cast<std::byte*>(ptr)),
                            static_cast<std::int32_t>(pitch_in_bytes));
   }
 
-  using unique_pinned_host_ptr = std::unique_ptr<byte, detail::cuda_free_host>;
+  using unique_pinned_host_ptr = std::unique_ptr<std::byte, detail::cuda_free_host>;
 
   inline unique_pinned_host_ptr make_unique_host_pinned(const std::size_t num_bytes)
   {
@@ -108,7 +108,7 @@ namespace quxflux
     using func_t = cudaError_t (*)(void**, size_t);
     cuda_call<func_t>(&cudaMallocHost, &ptr, num_bytes);
 
-    return unique_pinned_host_ptr(static_cast<byte*>(ptr));
+    return unique_pinned_host_ptr(static_cast<std::byte*>(ptr));
   }
 
   template<typename T>

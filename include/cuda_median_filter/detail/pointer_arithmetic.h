@@ -18,9 +18,12 @@
 
 #include <cuda_median_filter/detail/primitives.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace quxflux
 {
-  template<typename T = byte, typename ByteT>
+  template<typename T = std::byte, typename ByteT>
   constexpr ByteT* calculate_pitched_address(ByteT* const base_address, const std::int32_t row_pitch, std::int32_t x,
                                              std::int32_t y)
   {

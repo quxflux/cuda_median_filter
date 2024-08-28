@@ -34,12 +34,12 @@ namespace quxflux
     pitched_array_image_source<T> img_src(src.data_ptr(), src.bounds(), src.row_pitch_in_bytes());
     pitched_array_image_target<T> img_dst(dst.data_ptr(), dst.bounds(), dst.row_pitch_in_bytes());
 
-    for (auto [x, y] : index2d_range(std::array{src.bounds().width, src.bounds().height}))
+    for (const auto [x, y] : index2d_range(std::array{src.bounds().width, src.bounds().height}))
     {
       std::array<T, FilterSize * FilterSize> buf{};
       auto it = buf.begin();
 
-      for (auto [filter_x, filter_y] : index2d_range(std::array{FilterSize, FilterSize}))
+      for (const auto [filter_x, filter_y] : index2d_range(std::array{FilterSize, FilterSize}))
       {
         const auto dx = x + filter_x - FilterSize / 2;
         const auto dy = y + filter_y - FilterSize / 2;

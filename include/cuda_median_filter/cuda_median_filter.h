@@ -25,7 +25,19 @@
 
 namespace quxflux
 {
-  struct median_2d_expert_settings;
+  /*
+   * Default settings for the median filter function.
+   * These values have been optimized for performance, nevertheless,
+   * performance may vary depending on the hardware and the image size and type.
+   *
+   * To supply custom settings, create a struct with the same static constexpr
+   * members and specify the desired values.
+   */
+  struct median_2d_expert_settings
+  {
+    static inline constexpr std::int32_t block_size = 16;
+    static inline constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
+  };
 
   template<typename T, std::int32_t FilterSize, typename ExpertSettings = median_2d_expert_settings>
   void median_2d_async(const cudaTextureObject_t src_texture, void* const dst, const std::int32_t dst_pitch_in_bytes,
@@ -34,7 +46,7 @@ namespace quxflux
     const bounds<std::int32_t> img_bounds{width, height};
 
     texture_image_source<T> texture_image_source(src_texture, img_bounds);
-    pitched_array_image_target<T> array2d_image_target(static_cast<byte*>(dst), img_bounds, dst_pitch_in_bytes);
+    pitched_array_image_target<T> array2d_image_target(static_cast<std::byte*>(dst), img_bounds, dst_pitch_in_bytes);
 
     detail::median_2d_async<FilterSize, ExpertSettings>(texture_image_source, array2d_image_target, stream);
   }
@@ -46,15 +58,10 @@ namespace quxflux
   {
     const bounds<std::int32_t> img_bounds{width, height};
 
-    pitched_array_image_source<T> array2d_image_source(static_cast<const byte*>(src), img_bounds, src_pitch_in_bytes);
-    pitched_array_image_target<T> array2d_image_target(static_cast<byte*>(dst), img_bounds, dst_pitch_in_bytes);
+    pitched_array_image_source<T> array2d_image_source(static_cast<const std::byte*>(src), img_bounds,
+                                                       src_pitch_in_bytes);
+    pitched_array_image_target<T> array2d_image_target(static_cast<std::byte*>(dst), img_bounds, dst_pitch_in_bytes);
 
     detail::median_2d_async<FilterSize, ExpertSettings>(array2d_image_source, array2d_image_target, stream);
   }
-
-  struct median_2d_expert_settings
-  {
-    static inline constexpr std::int32_t block_size = 16;
-    static inline constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
-  };
 }  // namespace quxflux

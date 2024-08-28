@@ -47,8 +47,8 @@ namespace quxflux
     auto bounds() const noexcept { return bounds_; }
     std::int32_t row_pitch_in_bytes() const { return row_pitch_bytes_; }
 
-    byte* data() { return data_.get(); }
-    const byte* data() const { return data_.get(); }
+    std::byte* data() { return data_.get(); }
+    const std::byte* data() const { return data_.get(); }
 
     explicit operator bool() const
     {

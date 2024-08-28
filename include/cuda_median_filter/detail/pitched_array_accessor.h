@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuda_median_filter/detail/cuda_wrap.h>
 #include <cuda_median_filter/detail/pointer_arithmetic.h>
 #include <cuda_median_filter/detail/primitives.h>
 
@@ -40,27 +39,27 @@ namespace quxflux
     static inline bool constexpr is_mutable_access = std::is_same_v<Access, detail::mutable_access>;
 
   public:
-    using ptr_t = std::conditional_t<is_mutable_access, byte, const byte>*;
+    using ptr_t = std::conditional_t<is_mutable_access, std::byte, const std::byte>*;
 
     constexpr pitched_array_accessor(ptr_t const data_ptr, const std::int32_t row_pitch)
       : data_ptr_(data_ptr), row_pitch_(row_pitch)
     {}
 
-    __host__ __device__ constexpr T get(const point<std::int32_t>& coord) const
+    [[nodiscard]] constexpr T get(const point<std::int32_t>& coord) const
     {
       T r;
-      memcpy(&r, calculate_pitched_address<T>(data_ptr_, row_pitch_, coord.x, coord.y), sizeof(T));
+      std::memcpy(&r, calculate_pitched_address<T>(data_ptr_, row_pitch_, coord.x, coord.y), sizeof(T));
       return r;
     }
 
     template<typename Q = Access, typename = std::enable_if_t<std::is_same_v<Q, detail::mutable_access>>>
-    __host__ __device__ constexpr void set(const T& value, const point<std::int32_t>& coord) const
+    constexpr void set(const T& value, const point<std::int32_t>& coord) const
     {
-      memcpy(calculate_pitched_address<T>(data_ptr_, row_pitch_, coord.x, coord.y), &value, sizeof(T));
+      std::memcpy(calculate_pitched_address<T>(data_ptr_, row_pitch_, coord.x, coord.y), &value, sizeof(T));
     }
 
-    __host__ __device__ constexpr ptr_t data_ptr() const { return data_ptr_; }
-    __host__ __device__ constexpr std::int32_t row_pitch() const { return row_pitch_; }
+    [[nodiscard]] constexpr ptr_t data_ptr() const { return data_ptr_; }
+    [[nodiscard]] constexpr std::int32_t row_pitch() const { return row_pitch_; }
 
   private:
     ptr_t data_ptr_;

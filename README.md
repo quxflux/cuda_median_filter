@@ -54,13 +54,13 @@ void median_7x7_u8(const cudaTextureObject_t tex,
 ### general
 * CUDA 11.6 (older versions may work as well)
 * Nvidia GPU with compute capability 61 or higher (GPUs with a lower compute capability version may work as well) 
-* [SortingNetworkCpp](https://github.com/quxflux/sorting_network_cpp) (contained as submodule)
+* [SortingNetworkCpp](https://github.com/quxflux/sorting_network_cpp) (fetched via CPM)
 
 ### tests
-* [metal](https://github.com/brunocodutra/metal) (contained as submodule)
+* [metal](https://github.com/brunocodutra/metal) (fetched via CPM)
 
 ### benchmark
-* [metal](https://github.com/brunocodutra/metal) (contained as submodule)
+* [metal](https://github.com/brunocodutra/metal) (fetched via CPM)
 * optional; dependency is needed when the according option is enabled in the CMake project:
   * [OpenCV](https://github.com/opencv/opencv) (OpenCV CPU median filter implementation)
   * [OpenCV Contrib](https://github.com/opencv/opencv_contrib) (OpenCV CUDA median filter implementation)
@@ -71,6 +71,7 @@ void median_7x7_u8(const cudaTextureObject_t tex,
 * no ROI support
 * anchor is always centered in filter mask
 * only single channel images are supported
+* filter size and data type has to be known at compile time (or a predefined set of configurations has to be instantiated manually and to be selected from at runtime)
 
 ## Results
 
@@ -92,6 +93,7 @@ The proposed sorting network based CUDA median filter implementation shows signi
 * [metal](https://github.com/brunocodutra/metal) for test case and benchmark generation
 * [Jason Turners C++ Starter Project](https://github.com/cpp-best-practices/cpp_starter_project)
 * plots generated with [Plotly Graphing Libraries](https://plotly.com/graphing-libraries/)
+* [cpm](https://github.com/cpm-cmake/CPM.cmake) for package management
 
 ## License
 

@@ -29,7 +29,7 @@ namespace quxflux
   public:
     texture_handle() = default;
 
-    texture_handle(const byte* device_ptr, const bounds<std::int32_t>& bounds, std::int32_t row_pitch_in_bytes)
+    texture_handle(const std::byte* device_ptr, const bounds<std::int32_t>& bounds, std::int32_t row_pitch_in_bytes)
     {
       cudaResourceDesc resDesc;
       memset(&resDesc, 0, sizeof(resDesc));

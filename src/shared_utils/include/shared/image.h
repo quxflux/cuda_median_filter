@@ -40,7 +40,7 @@ namespace quxflux
     {
       resize(bounds, row_pitch_in_bytes);
     }
-    image(const std::shared_ptr<byte> preallocated_data, const bounds<std::int32_t>& bounds,
+    image(const std::shared_ptr<std::byte> preallocated_data, const bounds<std::int32_t>& bounds,
           const std::int32_t row_pitch_in_bytes)
       : bounds_(bounds), row_pitch_in_bytes_(row_pitch_in_bytes), data_(preallocated_data)
     {}
@@ -57,8 +57,8 @@ namespace quxflux
                               ? row_pitch_in_bytes
                               : int_div_ceil(std::int32_t{sizeof(T)} * bounds_.width, DefaultAlignment) *
                                   DefaultAlignment;
-      data_ = std::shared_ptr<byte>(
-        static_cast<byte*>(::operator new(static_cast<std::size_t>(bounds_.height * row_pitch_in_bytes_))));
+      data_ = std::shared_ptr<std::byte>(
+        static_cast<std::byte*>(::operator new(static_cast<std::size_t>(bounds_.height * row_pitch_in_bytes_))));
     }
 
     explicit operator bool() const
@@ -69,16 +69,16 @@ namespace quxflux
     auto bounds() const { return bounds_; }
     std::int32_t row_pitch_in_bytes() const { return row_pitch_in_bytes_; }
 
-    byte* data_ptr() { return data_.get(); }
-    const byte* data_ptr() const { return data_.get(); }
+    std::byte* data_ptr() { return data_.get(); }
+    const std::byte* data_ptr() const { return data_.get(); }
 
-    byte* row_data_ptr(const std::int32_t row) { return data_.get() + row_pitch_in_bytes_ * row; }
-    const byte* row_data_ptr(const std::int32_t row) const { return data_.get() + row_pitch_in_bytes_ * row; }
+    std::byte* row_data_ptr(const std::int32_t row) { return data_.get() + row_pitch_in_bytes_ * row; }
+    const std::byte* row_data_ptr(const std::int32_t row) const { return data_.get() + row_pitch_in_bytes_ * row; }
 
   private:
     quxflux::bounds<std::int32_t> bounds_;
     std::int32_t row_pitch_in_bytes_ = 0;
 
-    std::shared_ptr<byte> data_;
+    std::shared_ptr<std::byte> data_;
   };
 }  // namespace quxflux

@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#include <gtest/gtest.h>
+#include <cuda_median_filter/cuda_median_filter.h>
 
-#include <filter_types_factory.h>
-#include <image_matcher.h>
-#include <median_filter_impl.h>
+#include <util/filter_types_factory.h>
+#include <util/image_matcher.h>
+#include <util/naive_median_filter_impl.h>
 
 #include <shared/fill_image_random.h>
 #include <shared/gpu_image.h>
@@ -26,6 +26,8 @@
 #include <shared/stream_handle.h>
 #include <shared/texture_handle.h>
 #include <shared/type_names.h>
+
+#include <gtest/gtest.h>
 
 #include <array>
 #include <string_view>
@@ -47,7 +49,7 @@ namespace quxflux
       static std::string GetName(int)
       {
         const auto type_name = std::string{to_string(typeid(typename T::value_type))};
-        return type_name + "_" + std::to_string(T::filter_size);
+        return type_name + "_" + std::to_string(T::filter_size) + "_" + (T::vectorize ? "" : "no_") + "simd";
       }
     };
 
@@ -63,6 +65,14 @@ namespace quxflux
       struct texture
       {};
     }  // namespace image_source_type
+
+    template<bool AllowVectorization>
+    struct expert_settings
+    {
+      static constexpr auto block_size = median_2d_expert_settings::block_size;
+      static constexpr std::int32_t max_filter_size_allowed_for_vectorization =
+        AllowVectorization ? std::numeric_limits<std::int32_t>::max() : 0;
+    };
 
     template<typename FilterSpec, typename ImageSourceType>
     void run_gpu_cpu_equality_test(const ImageSourceType&)
@@ -88,14 +98,14 @@ namespace quxflux
         {
           const texture_handle<T> tex(gpu_img_src.data(), gpu_img_src.bounds(), gpu_img_src.row_pitch_in_bytes());
 
-          median_2d_async<T, FilterSpec::filter_size>(tex, gpu_img_result.data(), gpu_img_result.row_pitch_in_bytes(),
-                                                      bounds.width, bounds.height, stream);
+          median_2d_async<T, FilterSpec::filter_size, expert_settings<FilterSpec::vectorize>>(
+            tex, gpu_img_result.data(), gpu_img_result.row_pitch_in_bytes(), bounds.width, bounds.height, stream);
 
         } else if constexpr (std::is_same_v<ImageSourceType, image_source_type::pitched_array_2d>)
         {
-          median_2d_async<T, FilterSpec::filter_size>(gpu_img_src.data(), gpu_img_src.row_pitch_in_bytes(),
-                                                      gpu_img_result.data(), gpu_img_result.row_pitch_in_bytes(),
-                                                      bounds.width, bounds.height, stream);
+          median_2d_async<T, FilterSpec::filter_size, expert_settings<FilterSpec::vectorize>>(
+            gpu_img_src.data(), gpu_img_src.row_pitch_in_bytes(), gpu_img_result.data(),
+            gpu_img_result.row_pitch_in_bytes(), bounds.width, bounds.height, stream);
         }
 
         transfer(gpu_img_result, cpu_buf, stream);
@@ -132,9 +142,3 @@ namespace quxflux
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::texture{});
   }
 }  // namespace quxflux
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
