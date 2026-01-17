@@ -45,7 +45,10 @@ if (CUDA_MEDIAN_FILTER_BUILD_TESTS OR CUDA_MEDIAN_FILTER_BUILD_BENCHMARK_APP)
 endif()
 
 if (CUDA_MEDIAN_FILTER_BUILD_TESTS)
-    CPMAddPackage("gh:google/googletest#release-1.12.0")
+    CPMAddPackage(
+            URI "gh:google/googletest@1.17.0"
+            OPTIONS "INSTALL_GTEST OFF"
+    )
 endif()
 
 add_subdirectory(src)
