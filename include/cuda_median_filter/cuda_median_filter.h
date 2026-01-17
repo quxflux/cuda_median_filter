@@ -35,8 +35,8 @@ namespace quxflux
    */
   struct median_2d_expert_settings
   {
-    static inline constexpr std::int32_t block_size = 16;
-    static inline constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
+    static constexpr std::int32_t block_size = 16;
+    static constexpr std::int32_t max_filter_size_allowed_for_vectorization = 7;
   };
 
   template<typename T, std::int32_t FilterSize, typename ExpertSettings = median_2d_expert_settings>
