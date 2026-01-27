@@ -63,16 +63,8 @@ namespace
   }
 }  // namespace
 
-int main(int argc, char** args)
+int main(const int, char**)
 {
-  bool dump_images = false;
-
-  for (int i = 1; i < argc; ++i)
-  {
-    if (std::string_view(args[i]) == "--dump")
-      dump_images = true;
-  }
-
   for (const auto& filter_config_and_impl : get_filter_impls())
   {
     for_each_filter_value_type([&]([[maybe_unused]] auto value) {
@@ -129,14 +121,6 @@ int main(int argc, char** args)
           const auto start = clock::now();
           filter_impl->filter(src_image, any_result);
           const auto stop = clock::now();
-
-          if (dump_images && i == 0)
-          {
-            std::stringstream ss;
-            ss << "./" << num_megapixels << "_" << filter_config << ".ppm";
-
-            export_grayscale_ppm(dst_image, ss.str());
-          }
 
           const auto num_milliseconds =
             std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(stop - start).count();
