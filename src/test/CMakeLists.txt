@@ -2,8 +2,34 @@ project(cuda_median_filter_tests)
 
 include(GoogleTest)
 
+function(create_test_instantiation_file DATA_TYPE)
+    string(TOLOWER ${DATA_TYPE} type_lower)
+    set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_${type_lower}.cu")
+    file(WRITE ${OUTPUT_FILE}
+"
+#include <cuda_median_filter_tests.h>
+
+namespace quxflux
+{
+  using filter_specs_${type_lower} = rewrap_list<::testing::Types, generate_all_filter_specs<${DATA_TYPE}, metal::numbers<1, 3, 5, 7>>>;
+  TYPED_TEST_SUITE(filter_impl_test, filter_specs_${type_lower}, test_type_name_generator);
+  INSTANTIATE_TYPED_TEST_SUITE_P(scalar_${type_lower}, filter_impl_test, filter_specs_${type_lower});
+}  // namespace quxflux
+")
+
+    message(STATUS "Generated test instantiation file: ${OUTPUT_FILE}")
+endfunction()
+
+create_test_instantiation_file("uint8_t")
+create_test_instantiation_file("uint16_t")
+create_test_instantiation_file("uint32_t")
+create_test_instantiation_file("float")
+
 add_executable(${PROJECT_NAME}
-    src/cuda_median_filter_tests.cu
+    ${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_uint8_t.cu
+    ${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_uint16_t.cu
+    ${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_uint32_t.cu
+    ${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_float.cu
     src/image_filter_config.cpp
     src/load_neighbor_pixels.cpp
     src/math.cpp
