@@ -16,6 +16,7 @@
 
 #include <cuda_median_filter/cuda_median_filter.h>
 
+// ReSharper disable once CppUnusedIncludeDirective - kept for conveniences of includers
 #include <util/filter_types_factory.h>
 #include <util/image_matcher.h>
 #include <util/naive_median_filter_impl.h>
@@ -29,9 +30,7 @@
 
 #include <gtest/gtest.h>
 
-#include <array>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
 
 namespace quxflux
@@ -46,8 +45,13 @@ namespace quxflux
     }
   };
 
+  // This test will be specialized with varying FilterSpec types,
+  // where each FilterSpec defines the data type, filter size and vectorization
+  // setting.
+  // The specializations are split into separate translation units to reduce compilation time.
+  // See CMakeLists.txt for details.
   template<typename>
-  struct filter_impl_test : ::testing::Test
+  struct median_filter_test : ::testing::Test
   {};
 
   namespace image_source_type
@@ -59,6 +63,11 @@ namespace quxflux
     {};
   }  // namespace image_source_type
 
+  // Expert settings for the median filter kernel. These are 
+  // used to enforce or disable vectorization based on the FilterSpec.
+  // When the expert settings are not provided, the implementation
+  // may choose to vectorize or not based on internal heuristics, but
+  // for testing we want to have full control over this aspect.
   template<bool AllowVectorization>
   struct expert_settings
   {
@@ -107,9 +116,9 @@ namespace quxflux
     EXPECT_THAT(cpu_buf, is_equal_to_image(expected));
   }  // namespace
 
-  TYPED_TEST_SUITE_P(filter_impl_test);
+  TYPED_TEST_SUITE_P(median_filter_test);
 
-  TYPED_TEST_P(filter_impl_test, call_with_empty_image_does_not_fail)
+  TYPED_TEST_P(median_filter_test, call_with_empty_image_does_not_fail)
   {
     using T = typename TypeParam::value_type;
 
@@ -123,17 +132,17 @@ namespace quxflux
       gpu_img_src.bounds().width, gpu_img_src.bounds().height)));
   }
 
-  TYPED_TEST_P(filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source)
+  TYPED_TEST_P(median_filter_test, gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source)
   {
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::pitched_array_2d{});
   }
 
-  TYPED_TEST_P(filter_impl_test, gpu_result_equals_naive_cpu_implementation_when_using_texture_image_source)
+  TYPED_TEST_P(median_filter_test, gpu_result_equals_naive_cpu_implementation_when_using_texture_image_source)
   {
     run_gpu_cpu_equality_test<TypeParam>(image_source_type::texture{});
   }
 
-  REGISTER_TYPED_TEST_SUITE_P(filter_impl_test,  //
+  REGISTER_TYPED_TEST_SUITE_P(median_filter_test,  //
                               call_with_empty_image_does_not_fail,
                               gpu_result_equals_naive_cpu_implementation_when_using_pitched_image_source,
                               gpu_result_equals_naive_cpu_implementation_when_using_texture_image_source);

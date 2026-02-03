@@ -16,33 +16,38 @@
 
 #pragma once
 
-#include <cuda_median_filter/cuda_median_filter.h>
-
-#include <tuple>
 #include <type_traits>
 
 #include <metal.hpp>
 
 namespace quxflux
 {
+  // clang-format: off
+  // Using custom tags instead of std::true_type/std::false_type to improve readability in test explorer
+  struct use_vectorization {};
+  struct no_vectorization {};
+  // clang-format on
+
   template<typename DataType, typename FilterSize, typename Vectorize>
   struct filter_spec
   {
     using value_type = DataType;
-    static constexpr  auto filter_size = FilterSize::value;
-    static constexpr auto vectorize = Vectorize::value;
+    static constexpr auto filter_size = FilterSize::value;
+    static constexpr auto vectorize = std::is_same_v<Vectorize, use_vectorization>;
   };
 
   namespace detail
   {
     template<typename DataType, typename FilterSizes>
-    auto generate_all_filter_specs_impl()
-      -> metal::transform<metal::partial<metal::lambda<metal::apply>, metal::lambda<filter_spec>>,
-                          metal::cartesian<metal::list<DataType>, FilterSizes, metal::list<std::false_type, std::true_type>>>
+    auto generate_all_filter_specs_impl() -> metal::transform<
+      metal::partial<metal::lambda<metal::apply>, metal::lambda<filter_spec>>,
+      metal::cartesian<metal::list<DataType>, FilterSizes, metal::list<no_vectorization, use_vectorization>>>
     {
       return {};
     }
 
+    // Utility function to rewrap a metal::list into another variadic template.
+    // This is used for transforming metal::lists into testing::Types for GoogleTest.
     template<template<typename...> typename VariadicT>
     struct rewrap_list_impl
     {

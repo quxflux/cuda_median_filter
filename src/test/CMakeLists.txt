@@ -2,6 +2,10 @@ project(cuda_median_filter_tests)
 
 include(GoogleTest)
 
+# Function to generate test instantiation files for different data types
+# The compilation of all test instantiations in a single translation unit
+# causes excessive compilation times, so we split them into separate files.
+# Each file will instantiate tests for a specific data type.
 function(create_test_instantiation_file DATA_TYPE)
     string(TOLOWER ${DATA_TYPE} type_lower)
     set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/cuda_median_filter_tests_${type_lower}.cu")
@@ -12,8 +16,8 @@ function(create_test_instantiation_file DATA_TYPE)
 namespace quxflux
 {
   using filter_specs_${type_lower} = rewrap_list<::testing::Types, generate_all_filter_specs<${DATA_TYPE}, metal::numbers<1, 3, 5, 7>>>;
-  TYPED_TEST_SUITE(filter_impl_test, filter_specs_${type_lower}, test_type_name_generator);
-  INSTANTIATE_TYPED_TEST_SUITE_P(scalar_${type_lower}, filter_impl_test, filter_specs_${type_lower});
+  TYPED_TEST_SUITE(median_filter_test, filter_specs_${type_lower}, test_type_name_generator);
+  INSTANTIATE_TYPED_TEST_SUITE_P(scalar_${type_lower}, median_filter_test, filter_specs_${type_lower});
 }  // namespace quxflux
 ")
 
