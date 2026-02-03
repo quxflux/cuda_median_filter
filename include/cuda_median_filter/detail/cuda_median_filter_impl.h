@@ -28,6 +28,7 @@
 #include <sorting_network_cpp/sorting_network.h>
 
 #include <array>
+#include <cstring>
 #include <cstdint>
 #include <type_traits>
 
@@ -44,45 +45,17 @@ namespace quxflux::detail
     }
 
     template<std::int32_t FilterSize, std::int32_t SimdWidth, typename T>
-    __device__ inline auto filter_serial(const pitched_array_accessor<T> data)
+    __device__ std::array<T, SimdWidth> filter(const pitched_array_accessor<T> data)
     {
+      static_assert(SimdWidth == 1 || SimdWidth == 4);
+      using element_type = std::array<T, SimdWidth>;
+
       constexpr auto n_filter_elements = FilterSize * FilterSize;
       constexpr auto filter_radius = FilterSize / 2;
 
       const auto [local_idx, block_idx] = get_thread_coordinates();
 
-      std::array<T, n_filter_elements> local_neighborhood_pixels;
-      auto it = local_neighborhood_pixels.begin();
-
-      static_for_2d<FilterSize, FilterSize>([&](const auto idx) {
-        const std::int32_t dy = idx.y - filter_radius;
-        const std::int32_t dx = idx.x - filter_radius;
-
-        const idx_2d apron_idx = {local_idx.x * SimdWidth + filter_radius + dx, local_idx.y + filter_radius + dy};
-        *(it++) = data.get(apron_idx);
-      });
-
-      constexpr sorting_net::sorting_network<n_filter_elements> sorting_net;
-
-      sorting_net(local_neighborhood_pixels.begin(), [](auto& a, auto& b) {
-        const auto a_cpy = a;
-
-        a = std::min(a, b);
-        b = std::max(a_cpy, b);
-      });
-
-      return *(local_neighborhood_pixels.begin() + n_filter_elements / 2);
-    }
-
-    template<std::int32_t FilterSize, std::int32_t SimdWidth, typename T>
-    __device__ inline auto filter_simd(const pitched_array_accessor<T> data)
-    {
-      constexpr auto n_filter_elements = FilterSize * FilterSize;
-      constexpr auto filter_radius = FilterSize / 2;
-
-      const auto [local_idx, block_idx] = get_thread_coordinates();
-
-      std::array<unsigned int, n_filter_elements> local_neighborhood_pixels;
+      std::array<element_type, n_filter_elements> local_neighborhood_pixels;
       auto it = local_neighborhood_pixels.begin();
 
       static_for_2d<FilterSize, FilterSize>([&](const auto idx) {
@@ -91,22 +64,20 @@ namespace quxflux::detail
 
         const idx_2d apron_idx = {local_idx.x * SimdWidth + filter_radius + dx, local_idx.y + filter_radius + dy};
 
-        static_assert(SimdWidth == 4);
-        unsigned int r;
+        element_type r;
 
-        const bool is_aligned_access = apron_idx.x % 4 == 0;
+        const bool is_aligned_access = apron_idx.x % SimdWidth == 0 &&
+                                       (SimdWidth * sizeof(T) == 32 || SimdWidth * sizeof(T) == 64);
 
         if (is_aligned_access)
         {
-          r = reinterpret_cast<const unsigned int&>(
-            *calculate_pitched_address<>(data.data_ptr(), data.row_pitch(), apron_idx.x, apron_idx.y));
+          std::memcpy(r.data(),
+                      calculate_pitched_address<>(data.data_ptr(), data.row_pitch(), apron_idx.x, apron_idx.y),
+                      sizeof(element_type));
         } else
         {
-          auto& [x, y, z, w] = reinterpret_cast<uchar4&>(r);
-          x = data.get({apron_idx.x + 0, apron_idx.y});
-          y = data.get({apron_idx.x + 1, apron_idx.y});
-          z = data.get({apron_idx.x + 2, apron_idx.y});
-          w = data.get({apron_idx.x + 3, apron_idx.y});
+          for (int i = 0; i < SimdWidth; ++i)
+            r[i] = data.get({apron_idx.x + i, apron_idx.y});
         }
 
         *(it++) = r;
@@ -114,16 +85,18 @@ namespace quxflux::detail
 
       constexpr sorting_net::sorting_network<n_filter_elements> sorting_net;
 
-      sorting_net(local_neighborhood_pixels.begin(), [](auto& a, auto& b) {
-        const auto a_cpy = a;
+      sorting_net(local_neighborhood_pixels.begin(), [](element_type& a, element_type& b) {
+        const element_type a_cpy = a;
 
-        a = __vminu4(a, b);
-        b = __vmaxu4(a_cpy, b);
+        for (int i = 0; i < SimdWidth; ++i)
+        {
+          a[i] = std::min(a_cpy[i], b[i]);
+          b[i] = std::max(a_cpy[i], b[i]);
+        }
       });
 
       return *(local_neighborhood_pixels.begin() + n_filter_elements / 2);
     }
-
 
     template<std::int32_t FilterSize, std::int32_t BlockSize, std::int32_t SimdWidth, typename ImageSource,
              typename ImageTarget>
@@ -132,7 +105,7 @@ namespace quxflux::detail
       namespace config = image_filter_config;
 
       using T = typename ImageSource::value_type;
-
+      static constexpr auto local_bounds = config::calculate_block_bounds(BlockSize, SimdWidth);
 
       const auto [local_idx, block_idx] = get_thread_coordinates();
 
@@ -140,39 +113,26 @@ namespace quxflux::detail
       const pitched_array_accessor<T> shared_buf(
         shared_buf_data, config::calculate_shared_buf_row_pitch<T>(BlockSize, FilterSize, SimdWidth));
 
-      load_neighbor_pixels<T, load_neighbor_params{.block_size = BlockSize,
-                                                   .filter_size = FilterSize,
-                                                   .local_bounds = config::calculate_block_bounds(BlockSize,
-                                                                                                  SimdWidth)}>  //
+      load_neighbor_pixels<
+        T, load_neighbor_params{.block_size = BlockSize, .filter_size = FilterSize, .local_bounds = local_bounds}>  //
         (shared_buf, img_source, block_idx, local_idx);
       __syncthreads();
 
-      constexpr bool vectorize = SimdWidth > 1;
-      using sorting_t = std::conditional_t<vectorize, unsigned int, T>;
-
-      sorting_t filtered_value;
-      if constexpr (vectorize)
-      {
-        filtered_value = filter_simd<FilterSize, SimdWidth>(shared_buf);
-      } else
-      {
-        filtered_value = filter_serial<FilterSize, SimdWidth>(shared_buf);
-      }
-
-      constexpr auto local_bounds = config::calculate_block_bounds(BlockSize, SimdWidth);
+      const auto filtered_value = filter<FilterSize, SimdWidth>(shared_buf);
 
       const idx_2d global_idx = {local_idx.x * SimdWidth + local_bounds.width * block_idx.x,
                                  local_idx.y + local_bounds.height * block_idx.y};
 
       if (inside_bounds(global_idx, img_source.bounds()))
       {
-        if constexpr (vectorize)
+        if constexpr (sizeof(T) * SimdWidth == 32 || sizeof(T) * SimdWidth == 64)
         {
-          reinterpret_cast<unsigned int&>(
-            *calculate_pitched_address<>(dst.data_ptr(), dst.row_pitch(), global_idx.x, global_idx.y)) = filtered_value;
+          std::memcpy(calculate_pitched_address<>(dst.data_ptr(), dst.row_pitch(), global_idx.x, global_idx.y),
+                      filtered_value.data(), SimdWidth * sizeof(T));
         } else
         {
-          dst.set(filtered_value, global_idx);
+          for (int i = 0; i < SimdWidth; ++i)
+            dst.set(filtered_value[i], {global_idx.x + i, global_idx.y + 0});
         }
       }
     }
